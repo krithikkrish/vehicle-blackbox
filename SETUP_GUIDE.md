@@ -147,7 +147,7 @@ pip3 install -r requirements.txt
 ## 📱 STEP 5: Set Your Emergency Phone Number
 
 ```bash
-nano main.py
+nano src/main.py
 ```
 
 Find this line near the top:
@@ -193,7 +193,7 @@ This will try to send a test SMS. Make sure the SIM has credit. Press `Ctrl + C`
 
 ```bash
 cd ~/vehicle-blackbox
-python3 main.py
+python3 src/main.py
 ```
 
 You should see:
@@ -223,7 +223,7 @@ git pull origin main
 
 Then run again:
 ```bash
-python3 main.py
+python3 src/main.py
 ```
 
 ---
@@ -232,7 +232,7 @@ python3 main.py
 
 | File | Purpose |
 |------|---------|
-| `main.py` | **Run this.** The main program that starts everything. |
+| `src/main.py` | **Run this.** The main program that starts everything. |
 | `sensors.py` | Talks to the physical sensors. |
 | `buffer.py` | Stores last 15 seconds + saves CSV to SD card. |
 | `crash_logic.py` | Decides if a crash happened. |
@@ -241,7 +241,7 @@ python3 main.py
 
 | Auto-generated File | When it appears |
 |---------------------|----------------|
-| `continuous_log.csv` | Created the moment you run `main.py`. Every sensor reading goes here. |
+| `continuous_log.csv` | Created the moment you run `src/main.py`. Every sensor reading goes here. |
 | `crash_log.json` | Created only if a crash is detected. Contains the last 15 seconds of data. |
 
 ---
@@ -251,7 +251,7 @@ python3 main.py
 | Problem | Fix |
 |---------|-----|
 | `ModuleNotFoundError: No module named 'RPi'` | Run `pip3 install RPi.GPIO` (add `--break-system-packages` if needed) |
-| `Permission denied` | Run with `sudo python3 main.py` |
+| `Permission denied` | Run with `sudo python3 src/main.py` |
 | GPS shows no data | Enable serial port (Step 2), take GPS outside, wait 5 mins, reboot Pi |
 | SMS not sending | Check SIM card is inserted, has credit, and run `ls /dev/ttyUSB*` — tell me the output |
 | LED not turning on | Check LED direction (long leg = +), check resistor is connected |

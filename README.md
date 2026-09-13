@@ -32,7 +32,7 @@ The system runs a **10Hz sensor loop** (10 readings per second) that does four t
 
 ```
 ┌─────────────┐
-│  READ       │  ← Poll all sensors (vibration, alcohol, GPS, speed simulation)
+│  READ       │  ← Poll all sensors (vibration, alcohol, hall, GPS, speed simulation)
 ├─────────────┤
 │  LOG        │  ← Write the reading to continuous_log.csv on the SD card
 ├─────────────┤
@@ -92,7 +92,7 @@ For detailed wiring diagrams, pin connections, library installation, and step-by
 git clone https://github.com/krithikkrish/vehicle-blackbox.git
 cd vehicle-blackbox
 pip3 install -r requirements.txt
-python3 main.py
+python3 src/main.py
 ```
 
 ---
