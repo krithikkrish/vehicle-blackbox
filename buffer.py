@@ -1,6 +1,8 @@
 from collections import deque
 import json
+import csv
 import time
+import os
 
 class CircularBuffer:
     def __init__(self, max_seconds=15, sample_rate_hz=10):
@@ -27,3 +29,21 @@ class CircularBuffer:
             json.dump(data, f, indent=4)
         print(f"Buffer successfully dumped to {filename}")
         return filename
+
+class CSVLogger:
+    def __init__(self, filename="continuous_log.csv"):
+        self.filename = filename
+        self.headers_written = False
+        
+    def log_reading(self, reading):
+        """Append a single reading to the continuous CSV log."""
+        file_exists = os.path.isfile(self.filename)
+        
+        with open(self.filename, mode='a', newline='') as csvfile:
+            writer = csv.DictWriter(csvfile, fieldnames=reading.keys())
+            
+            if not file_exists or not self.headers_written:
+                writer.writeheader()
+                self.headers_written = True
+                
+            writer.writerow(reading)

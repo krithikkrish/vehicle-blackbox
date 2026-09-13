@@ -1,6 +1,6 @@
 #!/Library/Frameworks/Python.framework/Versions/3.14/bin/python3
 import time
-from buffer import CircularBuffer
+from buffer import CircularBuffer, CSVLogger
 from sensors import SensorInterface
 from alerts import AlertSystem
 from crash_logic import CrashDetector
@@ -14,6 +14,7 @@ def main():
     
     # Initialize modules
     buffer = CircularBuffer(max_seconds=15, sample_rate_hz=10)
+    csv_logger = CSVLogger("continuous_log.csv")
     sensors = SensorInterface()
     alerts = AlertSystem(phone_number=EMERGENCY_PHONE)
     crash_detector = CrashDetector()
@@ -25,21 +26,23 @@ def main():
             # 1. Read all sensors
             reading = sensors.read_all()
             
-            # 2. Store in circular buffer
+            # 2. Log to continuous CSV and store in circular buffer
+            csv_logger.log_reading(reading)
             buffer.add_reading(reading)
             
-            # 3. Check for routine safety violations (Temperature, Alcohol, etc.)
-            if reading["temperature_c"] and reading["temperature_c"] > 45.0:
-                alerts.trigger_local_alarm("High Temperature!")
+            # 3. Check for routine safety violations (Alcohol)
+            if reading.get("alcohol_detected"):
+                alerts.trigger_local_alarm("Driver Alcohol Detected!")
                 
             # 4. Check for Crash Event
             if not crash_handled and crash_detector.evaluate(reading):
                 print("\n!!! EXECUTING EMERGENCY PROTOCOL !!!")
                 
-                # Dump the last 15 seconds of data
+                # Dump the last 15 seconds of data (JSON format)
                 dump_file = buffer.dump_to_file("crash_log.json")
                 
-                # Send SOS SMS with latest GPS
+                # Trigger local LED alarm and Send SOS SMS with latest GPS
+                alerts.trigger_local_alarm("CRASH!")
                 alerts.send_emergency_sms(location_data=reading.get("gps"))
                 
                 crash_handled = True # Prevent sending 1000 SMS messages

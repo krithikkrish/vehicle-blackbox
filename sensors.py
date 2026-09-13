@@ -1,6 +1,5 @@
 import time
 import random
-import glob
 
 # Try to import hardware libraries, fallback to mock mode
 try:
@@ -18,47 +17,44 @@ class SensorInterface:
         if not self.mock:
             # Set up real GPIO pins
             GPIO.setmode(GPIO.BCM)
-            self.VIBRATION_PIN = 17
+            
+            # SW-420 Vibration (Pin 12 -> GPIO18)
+            self.VIBRATION_PIN = 18
             GPIO.setup(self.VIBRATION_PIN, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
             
-            # Setup GPS Serial
+            # MQ-3 Alcohol (Pin 16 -> GPIO23)
+            self.ALCOHOL_PIN = 23
+            GPIO.setup(self.ALCOHOL_PIN, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+            
+            # Hall-effect module (Pin 15 -> GPIO22)
+            self.HALL_PIN = 22
+            GPIO.setup(self.HALL_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+            
+            # Setup GPS Serial (NEO-6M on GPIO14/15)
             try:
                 self.gps_serial = serial.Serial('/dev/serial0', 9600, timeout=1)
             except:
                 self.gps_serial = None
-            
-            # (ADS1115 and MPU6050 setup would go here using smbus2 or adafruit libraries)
-            
-    def read_temperature(self):
-        """Read DS18B20 1-Wire temperature."""
-        if self.mock:
-            return random.uniform(25.0, 30.0)
-            
-        try:
-            base_dir = '/sys/bus/w1/devices/'
-            device_folder = glob.glob(base_dir + '28*')[0]
-            device_file = device_folder + '/w1_slave'
-            
-            with open(device_file, 'r') as f:
-                lines = f.readlines()
                 
-            if lines[0].strip()[-3:] == 'YES':
-                equals_pos = lines[1].find('t=')
-                if equals_pos != -1:
-                    temp_string = lines[1][equals_pos+2:]
-                    return float(temp_string) / 1000.0
-            return None
-        except:
-            return None # Sensor not wired
-
     def read_vibration(self):
         """Read SW-420 digital vibration sensor."""
         if self.mock:
             # 5% chance of mock vibration
             return random.random() < 0.05
-            
         return bool(GPIO.input(self.VIBRATION_PIN))
         
+    def read_alcohol(self):
+        """Read MQ-3 digital alcohol sensor."""
+        if self.mock:
+            return random.random() < 0.01
+        return bool(GPIO.input(self.ALCOHOL_PIN))
+        
+    def read_hall(self):
+        """Read Hall-effect digital sensor."""
+        if self.mock:
+            return random.choice([True, False])
+        return bool(GPIO.input(self.HALL_PIN))
+
     def read_gps(self):
         """Read latest GPS coordinates."""
         if self.mock:
@@ -66,7 +62,7 @@ class SensorInterface:
             
         if self.gps_serial and self.gps_serial.in_waiting:
             line = self.gps_serial.readline().decode('utf-8', errors='ignore').strip()
-            # Basic mock parse, a real implementation uses pynmea2
+            # Basic mock parse
             if "$GPRMC" in line:
                 return {"raw_nmea": line}
         return None
@@ -75,13 +71,10 @@ class SensorInterface:
         """Return a dictionary of all current sensor readings."""
         return {
             "timestamp": time.time(),
-            "temperature_c": self.read_temperature(),
             "vibration_detected": self.read_vibration(),
-            "gps": self.read_gps(),
-            # Placeholders for ADC and MPU6050 which need the hardware libraries
-            "alcohol_level": random.uniform(0, 100) if self.mock else 0,
-            "smoke_level": random.uniform(0, 100) if self.mock else 0,
-            "acceleration_g": random.uniform(0.9, 1.1) if self.mock else 1.0 
+            "alcohol_detected": self.read_alcohol(),
+            "hall_sensor_active": self.read_hall(),
+            "gps": self.read_gps()
         }
 
     def cleanup(self):

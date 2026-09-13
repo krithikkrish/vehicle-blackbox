@@ -11,12 +11,19 @@ class AlertSystem:
         self.phone_number = phone_number
         self.mock = MOCK_MODE
         
+        if not self.mock:
+            import RPi.GPIO as GPIO
+            self.LED_PIN = 17
+            GPIO.setmode(GPIO.BCM)
+            GPIO.setup(self.LED_PIN, GPIO.OUT)
+            GPIO.output(self.LED_PIN, GPIO.LOW)
+            
     def trigger_local_alarm(self, reason):
-        """Turn on the physical buzzer and red LED."""
+        """Turn on the physical LED."""
         print(f"ALARM TRIGGERED: {reason}")
         if not self.mock:
-            # GPIO.output(BUZZER_PIN, GPIO.HIGH)
-            pass
+            import RPi.GPIO as GPIO
+            GPIO.output(self.LED_PIN, GPIO.HIGH)
 
     def send_emergency_sms(self, location_data):
         """Send SOS SMS via SIM800L."""
