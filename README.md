@@ -1,81 +1,94 @@
-# 🚗 Smart Vehicle Black Box
+# 🚗 Vehicle Black Box Prototype
 
 > ⚠️ **Teammates:** If you are looking for instructions on how to wire the hardware and run the code, **[CLICK HERE TO READ THE SETUP GUIDE](SETUP_GUIDE.md)**!
 
 ---
 
-## What is this project?
+## 🌟 Overview & The Problem
 
-The **Smart Vehicle Black Box** is an embedded system that sits inside a vehicle and continuously records sensor data — just like a flight recorder (black box) in an airplane. It is built on a **Raspberry Pi 4B** running standard **Raspberry Pi OS (64-bit)**.
+Every year, thousands of accident victims die because help didn't arrive fast enough. Furthermore, **insurance companies** struggle with fraudulent claims and lack objective data to verify the exact circumstances of a crash. In many cases:
 
-The system does three things:
+- The driver is unconscious and can't call for help.
+- Bystanders don't know the exact location to report.
+- There's no hard data to reconstruct what happened before the crash for insurance verification.
 
-1. **Records everything.** Every sensor reading (vibration, alcohol, GPS location, etc.) is logged to a CSV file on the SD card, 10 times per second. This creates a complete history of the trip.
-
-2. **Detects crashes automatically.** If the vibration sensor picks up a sustained impact (not just a pothole), the system saves the last 15 seconds of data to a `crash_log.json` file and sends an **SOS SMS** with the vehicle's GPS coordinates to an emergency contact.
-
-3. **Warns the driver.** If alcohol is detected in the cabin air, the system turns on a dashboard LED as a warning.
+The **Smart Vehicle Black Box** is an embedded IoT prototype built on a **Raspberry Pi 4B** that solves these problems automatically by providing instant emergency alerts and immutable data logs.
 
 ---
 
-## Hardware Used
+## 🔬 Prototype Implementation Note
 
-| Component | What it does |
-|-----------|-------------|
-| **Raspberry Pi 4B** | The brain of the system. Runs all the code. |
-| **SW-420 Vibration Sensor** | Detects physical impact — used to identify crashes. Connected to GPIO 18 (Pin 12). |
-| **MQ-3 Alcohol Sensor** | Detects alcohol in the cabin air — used for DUI prevention. Connected to GPIO 23 (Pin 16). |
-| **Hall-Effect Module** | Detects magnets — can be used for door/tamper detection. Connected to GPIO 22 (Pin 15). |
-| **NEO-6M GPS Module** | Tracks the vehicle's real-time location via satellite. Connected to UART (Pin 8 & 10). |
-| **SIM800L GSM Module** | Sends emergency SMS messages. Requires a SIM card with SMS credit. Connected via USB. |
-| **LED + 220Ω Resistor** | Dashboard warning light. Turns on when alcohol is detected or a crash happens. Connected to GPIO 17 (Pin 11). |
+**Please note:** This project is currently a **hardware prototype** and is not deployed inside a real vehicle. To demonstrate functionality in a lab environment:
+- We use **potentiometers** to simulate changes in vehicle speed.
+- We use a **trigger button** and the SW-420 vibration sensor to simulate crash impacts.
+
+Despite being a prototype, the core logic is production-ready. For example, our crash detection algorithm actively **filters out false positives** (like speedbumps or potholes) by requiring a sustained crash signal before triggering the emergency protocol.
 
 ---
 
-## How the Software Works
+## ⚙️ How It Works
 
-The main program (`main.py`) runs a loop that executes **10 times per second**. On each cycle:
+The system runs a **10Hz sensor loop** (10 readings per second) that does four things on every tick:
 
-1. **Read** — Polls all sensors (vibration, alcohol, hall-effect, GPS).
-2. **Log** — Writes the reading to `continuous_log.csv` on the SD card.
-3. **Buffer** — Stores the reading in a 15-second rolling memory buffer.
-4. **Check** — Looks for crash conditions (sustained vibration for 3+ consecutive readings) and alcohol detection.
-5. **Act** — If a crash is confirmed:
-   - Dumps the 15-second buffer to `crash_log.json`
-   - Turns on the LED
-   - Sends an SOS SMS with GPS coordinates
+```
+┌─────────────┐
+│  READ       │  ← Poll all sensors (vibration, alcohol, hall, GPS, speed simulation)
+├─────────────┤
+│  LOG        │  ← Write the reading to continuous_log.csv on the SD card
+├─────────────┤
+│  BUFFER     │  ← Push the reading into a 15-second circular memory buffer
+├─────────────┤
+│  EVALUATE   │  ← Check for crash conditions or alcohol detection
+└──────┬──────┘
+       │
+       ▼  (If crash detected)
+┌─────────────────────────────────────────────┐
+│  1. Dump last 15 seconds → crash_log.json   │
+│  2. Turn on LED alarm                       │
+│  3. Send SOS SMS with GPS coordinates       │
+└─────────────────────────────────────────────┘
+```
 
-### Why 3 consecutive readings?
-A single vibration spike could be a speedbump or pothole. Requiring 3 consecutive vibration detections (0.3 seconds) filters out false alarms while still reacting fast enough for real crashes.
+### Crash Detection Logic (Eliminating False Positives)
+A single vibration spike or button press is **not** treated as a crash. Instead, the system uses a **streak counter**: the crash signal must be sustained for **3 consecutive readings** (0.3 seconds) before the emergency protocol is triggered. This filters out false alarms while reacting within a fraction of a second to a real collision.
 
----
-
-## Files in this Project
-
-| File | What it does |
-|------|-------------|
-| `main.py` | **Start here.** The main program that runs the entire system. |
-| `sensors.py` | Reads data from all the physical sensors. |
-| `buffer.py` | Manages the 15-second memory buffer and the continuous CSV logger. |
-| `crash_logic.py` | The crash detection algorithm (sustained vibration check). |
-| `alerts.py` | Controls the LED and sends the SOS SMS via the GSM module. |
-| `requirements.txt` | Python libraries needed to run the project. |
-| `SETUP_GUIDE.md` | Step-by-step wiring and installation guide for the Raspberry Pi. |
-| `tests/` | Individual test scripts to verify each sensor works on its own. |
+### Alcohol Detection
+The MQ-3 gas sensor continuously samples the air. When the digital output goes HIGH (alcohol concentration above threshold), the system immediately lights up the dashboard LED as a warning.
 
 ---
 
-## Data Files (auto-generated)
+## 🧩 Hardware Components
 
-| File | When it's created | What's inside |
-|------|-------------------|---------------|
-| `continuous_log.csv` | As soon as `main.py` starts | Every single sensor reading, logged continuously. |
-| `crash_log.json` | Only when a crash is detected | The last 15 seconds of sensor data before the crash. |
+| Component | Purpose in Prototype |
+|-----------|---------|
+| **Raspberry Pi 4B** | Central processing unit. Runs the Python telemetry loop. |
+| **SW-420 / Button** | Detects physical impacts and sustained vibration during simulated crashes. |
+| **Potentiometer** | Simulates vehicle speed data for telemetry logging. |
+| **MQ-3** | Monitors cabin air for alcohol. Has an adjustable sensitivity knob. |
+| **Hall-Effect Module** | Magnetic sensor used for door/tamper detection simulation. |
+| **NEO-6M** | Provides real-time latitude/longitude coordinates via satellite. |
+| **SIM800L** | Sends emergency SMS messages over the cellular network. |
+| **LED + 220Ω Resistor** | Dashboard warning light — turns on for alcohol alerts and crash events. |
 
 ---
 
-## Quick Start
+## 💾 Data Storage for Insurance Verification
 
+The system uses a **dual-storage strategy** to ensure data is never lost:
+
+| Storage | File | Format | When | Purpose |
+|---------|------|--------|------|---------|
+| **Cold Storage** | `continuous_log.csv` | CSV | Every tick (10/sec) | Full trip log. Every sensor reading ever recorded. Crucial for insurance audits. |
+| **Hot Buffer** | In-memory (`deque`) | Python objects | Every tick (10/sec) | Rolling 15-second window. Automatically discards older readings. |
+| **Crash Dump** | `crash_log.json` | JSON | On crash event only | Snapshot of the hot buffer at the moment of crash. Contains the critical 15 seconds before impact. |
+
+---
+
+## 🚀 Getting Started
+
+For detailed wiring diagrams, pin connections, library installation, and step-by-step run instructions, see the **[Setup Guide](SETUP_GUIDE.md)**.
+
+**Quick start** (if hardware is already wired):
 ```bash
 git clone https://github.com/krithikkrish/vehicle-blackbox.git
 cd vehicle-blackbox
@@ -83,12 +96,8 @@ pip3 install -r requirements.txt
 python3 main.py
 ```
 
-For full wiring instructions and detailed setup, see the **[Setup Guide](SETUP_GUIDE.md)**.
-
 ---
 
-## What's Coming Next
+## 🗺️ What's Coming Next
 
-- [ ] Flask Web Dashboard for remote live monitoring
-- [ ] Speed calculation from GPS data
-- [ ] Trip summary reports
+- [ ] **Flask Web Dashboard** for remote live monitoring of the sensor data
