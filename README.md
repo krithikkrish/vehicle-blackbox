@@ -32,7 +32,7 @@ The system runs a **10Hz sensor loop** (10 readings per second) that does four t
 
 ```
 ┌─────────────┐
-│  READ       │  ← Poll all sensors (vibration, alcohol, hall, GPS, speed simulation)
+│  READ       │  ← Poll all sensors (vibration, alcohol, GPS, speed simulation)
 ├─────────────┤
 │  LOG        │  ← Write the reading to continuous_log.csv on the SD card
 ├─────────────┤
@@ -65,7 +65,6 @@ The MQ-3 gas sensor continuously samples the air. When the digital output goes H
 | **SW-420 / Button** | Detects physical impacts and sustained vibration during simulated crashes. |
 | **Potentiometer** | Simulates vehicle speed data for telemetry logging. |
 | **MQ-3** | Monitors cabin air for alcohol. Has an adjustable sensitivity knob. |
-| **Hall-Effect Module** | Magnetic sensor used for door/tamper detection simulation. |
 | **NEO-6M** | Provides real-time latitude/longitude coordinates via satellite. |
 | **SIM800L** | Sends emergency SMS messages over the cellular network. |
 | **LED + 220Ω Resistor** | Dashboard warning light — turns on for alcohol alerts and crash events. |
