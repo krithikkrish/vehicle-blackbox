@@ -1,0 +1,224 @@
+/* static/css/style.css — Vehicle Black Box Dashboard */
+
+:root {
+  --bg:         #0d0d0f;
+  --surface:    #16181e;
+  --border:     #2a2d38;
+  --accent:     #00d4ff;
+  --accent2:    #7c3aed;
+  --green:      #22c55e;
+  --yellow:     #f59e0b;
+  --red:        #ef4444;
+  --text:       #e2e8f0;
+  --muted:      #64748b;
+  --font:       'Inter', 'Segoe UI', system-ui, sans-serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  min-height: 100vh;
+}
+
+/* ── Top Nav ───────────────────────────────────────────── */
+.navbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1.5rem;
+  height: 56px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.navbar .brand {
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.navbar .brand span { color: var(--text); }
+.navbar nav a {
+  color: var(--muted);
+  text-decoration: none;
+  margin-left: 1.5rem;
+  font-size: 0.875rem;
+  transition: color 0.2s;
+}
+.navbar nav a:hover, .navbar nav a.active { color: var(--text); }
+
+/* ── Status Banner ──────────────────────────────────────── */
+#status-banner {
+  text-align: center;
+  padding: 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  transition: background 0.4s;
+}
+#status-banner.normal   { background: #052e16; color: var(--green); }
+#status-banner.crash    { background: #450a0a; color: var(--red);   animation: flash 0.6s infinite alternate; }
+#status-banner.alcohol  { background: #431407; color: var(--yellow);}
+#status-banner.starting { background: #1e1b4b; color: var(--accent);}
+
+@keyframes flash { from { opacity: 1; } to { opacity: 0.4; } }
+
+/* ── Main Grid ──────────────────────────────────────────── */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+  padding: 1.25rem 1.5rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* ── Sensor Card ────────────────────────────────────────── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  transition: border-color 0.3s;
+}
+.card.alert { border-color: var(--red); }
+.card.warn  { border-color: var(--yellow); }
+.card.ok    { border-color: var(--green); }
+
+.card .card-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+.card .card-value {
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--text);
+}
+.card .card-unit {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+.card .card-status {
+  margin-top: 0.25rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  display: inline-block;
+  width: fit-content;
+}
+.status-ok      { background: #052e16; color: var(--green); }
+.status-warn    { background: #431407; color: var(--yellow);}
+.status-alert   { background: #450a0a; color: var(--red);   }
+.status-nofix   { background: #1e1b4b; color: var(--accent);}
+
+/* ── Map Embed ──────────────────────────────────────────── */
+.map-card {
+  grid-column: 1 / -1;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.map-card .map-header {
+  padding: 0.75rem 1.25rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+#gps-link { color: var(--accent); text-decoration: none; font-size: 0.8rem; }
+#map-iframe {
+  width: 100%;
+  height: 280px;
+  border: none;
+  filter: invert(0.9) hue-rotate(180deg);   /* dark-mode map */
+}
+
+/* ── Speed Chart ────────────────────────────────────────── */
+.chart-card {
+  grid-column: 1 / -1;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.25rem;
+}
+.chart-card .chart-title {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  text-transform: uppercase;
+  margin-bottom: 0.75rem;
+}
+#speed-chart { width: 100%; height: 140px; }
+
+/* ── Footer ─────────────────────────────────────────────── */
+footer {
+  text-align: center;
+  padding: 1rem;
+  font-size: 0.75rem;
+  color: var(--muted);
+  border-top: 1px solid var(--border);
+  margin-top: 1.5rem;
+}
+
+/* ── Logs Page ──────────────────────────────────────────── */
+.page-wrap { max-width: 900px; margin: 2rem auto; padding: 0 1.5rem; }
+.page-title { font-size: 1.25rem; font-weight: 700; margin-bottom: 1.25rem; }
+.log-table { width: 100%; border-collapse: collapse; }
+.log-table th, .log-table td {
+  text-align: left;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.875rem;
+}
+.log-table th { color: var(--muted); font-weight: 600; font-size: 0.75rem; }
+.log-table tr:hover td { background: var(--surface); }
+.log-table a { color: var(--accent); text-decoration: none; }
+
+/* ── Log Detail ─────────────────────────────────────────── */
+.log-meta { background: var(--surface); border: 1px solid var(--border);
+            border-radius: 10px; padding: 1rem 1.25rem; margin-bottom: 1rem; }
+.log-meta p { font-size: 0.875rem; margin: 0.3rem 0; }
+.log-meta strong { color: var(--muted); font-size: 0.75rem; }
+.timeline { list-style: none; border-left: 2px solid var(--border); padding-left: 1.25rem; }
+.timeline li { position: relative; padding: 0.5rem 0; font-size: 0.8rem; color: var(--muted); }
+.timeline li::before {
+  content: '';
+  position: absolute;
+  left: -1.4rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--border);
+}
+.timeline li.crash-entry { color: var(--red); }
+.timeline li.crash-entry::before { background: var(--red); }
+
+/* ── Responsive ─────────────────────────────────────────── */
+@media (max-width: 600px) {
+  .card .card-value { font-size: 1.5rem; }
+  #map-iframe { height: 200px; }
+}

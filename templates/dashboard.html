@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vehicle Black Box — Live Dashboard</title>
+  <link rel="stylesheet" href="/static/css/style.css" />
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+<!-- ── Navbar ──────────────────────────────────────────────────────────────── -->
+<nav class="navbar">
+  <div class="brand">🚗 <span>VEHICLE BLACK BOX</span></div>
+  <nav>
+    <a href="/" class="active">Dashboard</a>
+    <a href="/logs">Crash Logs</a>
+  </nav>
+</nav>
+
+<!-- ── Status Banner ────────────────────────────────────────────────────────── -->
+<div id="status-banner" class="starting">⏳  SYSTEM STARTING …</div>
+
+<!-- ── Sensor Cards Grid ────────────────────────────────────────────────────── -->
+<div class="grid">
+
+  <!-- GPS Location -->
+  <div class="card" id="card-gps">
+    <div class="card-label">📡 GPS Location</div>
+    <div style="font-size:1.1rem; font-weight:700; line-height:1.4">
+      <span id="gps-lat">---.-----</span>° N<br/>
+      <span id="gps-lon">---.-----</span>° E
+    </div>
+    <div class="card-unit">WGS-84 / NEO-6M</div>
+    <span class="card-status status-nofix" id="gps-fix-badge">ACQUIRING</span>
+  </div>
+
+  <!-- GPS Speed -->
+  <div class="card ok" id="card-gps-speed">
+    <div class="card-label">🛰 GPS Speed</div>
+    <div class="card-value" id="val-gps-speed">0.0</div>
+    <div class="card-unit">km/h</div>
+    <span class="card-status status-ok">GPS SPEED</span>
+  </div>
+
+  <!-- Hall Effect Speed -->
+  <div class="card ok" id="card-hall">
+    <div class="card-label">⚡ Wheel Speed</div>
+    <div class="card-value">0.0</div>
+    <div class="card-unit">km/h — Hall Effect</div>
+    <span class="card-status status-ok">NORMAL</span>
+  </div>
+
+  <!-- Alcohol -->
+  <div class="card ok" id="card-alcohol">
+    <div class="card-label">🍺 Alcohol (MQ-3)</div>
+    <div class="card-value">0.000</div>
+    <div class="card-unit">Volts (ADS1115)</div>
+    <span class="card-status status-ok">NORMAL</span>
+  </div>
+
+  <!-- Vibration -->
+  <div class="card ok" id="card-vib">
+    <div class="card-label">📳 Vibration (SW-420)</div>
+    <div class="card-value">NO</div>
+    <div class="card-unit">Impact sensor</div>
+    <span class="card-status status-ok">STABLE</span>
+  </div>
+
+  <!-- Speed Chart -->
+  <div class="chart-card">
+    <div class="chart-title">📈 Speed History — Last 60 ticks</div>
+    <canvas id="speed-chart"></canvas>
+  </div>
+
+  <!-- Live Map -->
+  <div class="map-card">
+    <div class="map-header">
+      🗺 Live GPS Map
+      <a id="gps-link" href="#" target="_blank">Open in Google Maps ↗</a>
+    </div>
+    <iframe
+      id="map-iframe"
+      src="https://www.openstreetmap.org/export/embed.html?bbox=80.1484,12.8356,80.1584,12.8456&layer=mapnik"
+      loading="lazy"
+      allowfullscreen>
+    </iframe>
+  </div>
+
+</div><!-- /grid -->
+
+<!-- ── Footer ────────────────────────────────────────────────────────────────── -->
+<footer>
+  Vehicle Black Box &nbsp;|&nbsp; VIT Chennai &nbsp;|&nbsp;
+  Last updated: <span id="last-updated">—</span>
+  &nbsp;|&nbsp; <a href="/logs" style="color:var(--accent)">View Crash Logs</a>
+</footer>
+
+<script src="/static/js/dashboard.js"></script>
+</body>
+</html>

@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{ filename }} — Vehicle Black Box</title>
+  <link rel="stylesheet" href="/static/css/style.css" />
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="brand">🚗 <span>VEHICLE BLACK BOX</span></div>
+  <nav>
+    <a href="/">Dashboard</a>
+    <a href="/logs" class="active">Crash Logs</a>
+  </nav>
+</nav>
+
+<div class="page-wrap">
+  <div class="page-title">🚨 {{ log.event | upper }} — {{ log.timestamp }}</div>
+
+  <!-- Meta summary -->
+  <div class="log-meta">
+    {% set last = log.entries | last %}
+    {% set first = log.entries | first %}
+    <p><strong>EVENT TYPE</strong> &nbsp; {{ log.event | upper }}</p>
+    <p><strong>RECORDED AT</strong> &nbsp; {{ log.timestamp }}</p>
+    <p><strong>ENTRIES</strong> &nbsp; {{ log.entries | length }} sensor readings</p>
+    {% if last %}
+    <p><strong>LAST GPS</strong> &nbsp;
+      {{ last.gps_lat }}, {{ last.gps_lon }}
+      {% if last.gps_lat and last.gps_lon %}
+      — <a href="https://maps.google.com/?q={{ last.gps_lat }},{{ last.gps_lon }}"
+           target="_blank" style="color:var(--accent)">Open in Maps ↗</a>
+      {% endif %}
+    </p>
+    <p><strong>SPEED AT EVENT</strong> &nbsp; {{ last.hall_speed_kmh }} km/h (Hall) / {{ last.gps_speed_kmh }} km/h (GPS)</p>
+    <p><strong>ALCOHOL VOLTAGE</strong> &nbsp; {{ last.alcohol_voltage }} V</p>
+    {% endif %}
+  </div>
+
+  <!-- Timeline -->
+  <div style="color:var(--muted); font-size:0.75rem; margin-bottom:0.5rem; font-weight:600; letter-spacing:0.08em;">
+    SENSOR TIMELINE (last 30 entries shown)
+  </div>
+  <ul class="timeline">
+    {% for entry in log.entries[-30:] %}
+    <li class="{{ 'crash-entry' if entry.vibration else '' }}">
+      <strong>{{ entry.timestamp }}</strong>
+      &nbsp;|&nbsp; Hall: {{ entry.hall_speed_kmh }} km/h
+      &nbsp;|&nbsp; GPS: {{ entry.gps_speed_kmh }} km/h
+      &nbsp;|&nbsp; Alcohol: {{ entry.alcohol_voltage }} V
+      &nbsp;|&nbsp; Vibration: {{ '🔴 YES' if entry.vibration else '🟢 NO' }}
+    </li>
+    {% endfor %}
+  </ul>
+</div>
+
+<footer>
+  Vehicle Black Box &nbsp;|&nbsp; VIT Chennai &nbsp;|&nbsp;
+  <a href="/logs" style="color:var(--accent)">← Back to Logs</a>
+</footer>
+</body>
+</html>

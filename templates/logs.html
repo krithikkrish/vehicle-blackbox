@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Crash Logs — Vehicle Black Box</title>
+  <link rel="stylesheet" href="/static/css/style.css" />
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="brand">🚗 <span>VEHICLE BLACK BOX</span></div>
+  <nav>
+    <a href="/">Dashboard</a>
+    <a href="/logs" class="active">Crash Logs</a>
+  </nav>
+</nav>
+
+<div class="page-wrap">
+  <div class="page-title">📂 Crash & Event Logs</div>
+
+  {% if logs %}
+  <table class="log-table">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Filename</th>
+        <th>Recorded At</th>
+        <th>Size</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for log in logs %}
+      <tr>
+        <td style="color:var(--muted)">{{ loop.index }}</td>
+        <td>{{ log.filename }}</td>
+        <td>{{ log.modified_at }}</td>
+        <td>{{ (log.size_bytes / 1024) | round(1) }} KB</td>
+        <td><a href="/logs/{{ log.filename }}">View →</a></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div style="color:var(--muted); margin-top:2rem; text-align:center;">
+    <div style="font-size:2rem">✅</div>
+    <div style="margin-top:0.5rem">No crash logs recorded yet.</div>
+    <div style="font-size:0.8rem; margin-top:0.25rem">Logs appear here automatically when a crash or alcohol event is detected.</div>
+  </div>
+  {% endif %}
+</div>
+
+<footer>
+  Vehicle Black Box &nbsp;|&nbsp; VIT Chennai
+</footer>
+</body>
+</html>
