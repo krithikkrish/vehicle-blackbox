@@ -9,8 +9,9 @@ except Exception:
 
 
 class AlertSystem:
-    def __init__(self, phone_number="+91XXXXXXXXXX"):
+    def __init__(self, phone_number="+91XXXXXXXXXX", enable_gsm: bool = True):
         self.phone_number = phone_number
+        self.enable_gsm = bool(enable_gsm)
         self.LED_PIN = 17  # GPIO 17 / Pin 11
 
         try:
@@ -44,8 +45,13 @@ class AlertSystem:
     def send_emergency_sms(self, location_data):
         """
         Send SOS SMS via SIM800L / GSM module.
+        If GSM is disabled, skips sending.
         If no physical GSM module is connected, gracefully runs in Simulation Mode.
         """
+        if not self.enable_gsm:
+            print("ℹ️ GSM alert skipped — GSM module is DISABLED in this configuration.")
+            return False
+
         message = f"🚨 SOS! CRASH DETECTED. Location: {location_data}"
 
         # Detect if physical GSM serial port is available
@@ -57,7 +63,7 @@ class AlertSystem:
 
         if not gsm_port or not SERIAL_AVAILABLE:
             print("\n" + "=" * 60)
-            print("  📱 [GSM SIMULATION MODE — NO HARDWARE MODULE CONNECTED]")
+            print("  📱 [GSM ACTIVE — SIMULATION MODE (No Hardware Module Connected)]")
             print(f"  Simulated SMS dispatched to: {self.phone_number}")
             print(f"  Message: {message}")
             print("=" * 60 + "\n")

@@ -1,13 +1,21 @@
 """
-main.py
-Entry point for the Vehicle Black Box system.
-Starts all sensor threads then launches the Flask web server.
+main.py — Vehicle Black Box (Version 1: GSM ONLY, No GPS)
+---------------------------------------------------------
+Default entrypoint:
+- GSM Alerts  : ENABLED (Sends crash/alcohol SOS SMS via SIM800L on /dev/ttyUSB0 or simulation)
+- GPS Module  : DISABLED (UART /dev/ttyAMA0 thread omitted, serial port free)
 
 Run on Pi:
-    python main.py
+    python3 main.py
 
 Dashboard:  http://blackbox.local:5000
 """
+
+import os
+import sys
+
+# Force GSM_ONLY mode before importing sensor_manager and app
+os.environ["BLACKBOX_MODE"] = "GSM_ONLY"
 
 import logging
 import sensor_manager
@@ -25,14 +33,17 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 if __name__ == "__main__":
-    logger.info("=" * 55)
-    logger.info("  Vehicle Black Box — Starting up")
-    logger.info("  VIT Chennai | B.Tech ECE")
-    logger.info("=" * 55)
+    print("\n" + "=" * 65)
+    print("  🚗 VEHICLE BLACK BOX — VERSION 1: GSM ONLY (NO GPS)")
+    print("  • GSM Alerts : ACTIVE (SIM800L / SMS alerts on impact)")
+    print("  • GPS Module : DISABLED (No GPS UART thread running)")
+    print("  • Sensors    : SW-420 (Vibration), ADS1115 (MQ-3, LM35), Hall")
+    print("  • Web UI     : http://blackbox.local:5000")
+    print("=" * 65 + "\n")
 
-    # Start sensor acquisition threads
-    sensor_manager.start_all()
-    logger.info("All sensor threads launched.")
+    # Start sensor acquisition threads in GSM_ONLY mode
+    sensor_manager.start_all(mode="GSM_ONLY")
+    logger.info("Sensor threads launched in GSM_ONLY mode.")
 
     # Start Flask (blocking)
     logger.info("Flask dashboard → http://blackbox.local:5000")

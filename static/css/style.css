@@ -361,3 +361,50 @@ footer {
   .card .card-value { font-size: 1.5rem; }
   #map-iframe { height: 200px; }
 }
+
+/* ── Mode Badges & Disabled Overlays ────────────────────── */
+.mode-badge {
+  display: inline-block;
+  padding: 0.2rem 0.6rem;
+  border-radius: 9999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  background: rgba(0, 212, 255, 0.15);
+  color: var(--accent);
+  border: 1px solid rgba(0, 212, 255, 0.35);
+  margin-left: 0.75rem;
+  text-transform: uppercase;
+}
+.mode-badge.gsm-only {
+  background: rgba(34, 197, 94, 0.15);
+  color: var(--green);
+  border-color: rgba(34, 197, 94, 0.35);
+}
+.mode-badge.gps-only {
+  background: rgba(124, 58, 237, 0.15);
+  color: #a78bfa;
+  border-color: rgba(124, 58, 237, 0.35);
+}
+.mode-badge.full {
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--yellow);
+  border-color: rgba(245, 158, 11, 0.35);
+}
+
+.map-disabled-overlay {
+  background: #181920;
+  color: var(--muted);
+  border: 1px dashed var(--border);
+  padding: 3.5rem 1rem;
+  text-align: center;
+  font-size: 0.875rem;
+  border-radius: 8px;
+  margin-top: 0.5rem;
+}
+
+.card-status.status-disabled {
+  background: #27272a;
+  color: #a1a1aa;
+}
+

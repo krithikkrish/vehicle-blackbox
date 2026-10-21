@@ -120,6 +120,21 @@ async function fetchAndUpdate() {
     const res  = await fetch('/api/live');
     const data = await res.json();
 
+    // ── Mode Badge ───────────────────────────────────────────────────────────
+    const modeBadge = el('mode-badge');
+    if (modeBadge && data.mode) {
+      if (data.mode === 'GSM_ONLY') {
+        modeBadge.textContent = 'MODE: GSM ONLY';
+        modeBadge.className = 'mode-badge gsm-only';
+      } else if (data.mode === 'GPS_ONLY') {
+        modeBadge.textContent = 'MODE: GPS ONLY';
+        modeBadge.className = 'mode-badge gps-only';
+      } else {
+        modeBadge.textContent = 'MODE: GPS + GSM';
+        modeBadge.className = 'mode-badge full';
+      }
+    }
+
     const isCrash = data.crash_detected || (data.system_status === 'CRASH');
     const isAlcohol = data.alcohol_alert || (data.system_status === 'ALCOHOL_ALERT');
 
@@ -139,12 +154,28 @@ async function fetchAndUpdate() {
         crashBox.style.display = 'block';
         const info = data.last_crash || {};
         el('crash-trigger').textContent = info.trigger || 'SW-420 Vibration Impact';
+
+        const smsStatus = el('crash-sms-status');
+        if (smsStatus) {
+          if (data.gsm_enabled) {
+            smsStatus.textContent = '✅ ACTIVE (SMS SOS Sent via GSM)';
+            smsStatus.style.color = 'var(--green)';
+          } else {
+            smsStatus.textContent = '⚠️ DISABLED (GPS-Only Mode)';
+            smsStatus.style.color = 'var(--muted)';
+          }
+        }
+
         el('crash-time').textContent    = info.time || new Date().toLocaleTimeString();
         el('crash-speed').textContent   = `${(info.speed_kmh ?? 0).toFixed(1)} km/h`;
 
-        const lat = (info.gps_lat || data.gps_lat || 12.8406).toFixed(5);
-        const lon = (info.gps_lon || data.gps_lon || 80.1534).toFixed(5);
-        el('crash-location').textContent = `${lat}° N, ${lon}° E`;
+        if (data.gps_enabled === false) {
+          el('crash-location').textContent = 'Location N/A (GPS Disabled)';
+        } else {
+          const lat = (info.gps_lat || data.gps_lat || 12.8406).toFixed(5);
+          const lon = (info.gps_lon || data.gps_lon || 80.1534).toFixed(5);
+          el('crash-location').textContent = `${lat}° N, ${lon}° E`;
+        }
 
         el('crash-temp').textContent = `${(info.temperature_c ?? data.temperature_c ?? 25.0).toFixed(1)} °C`;
         el('crash-alc').textContent  = `${(info.alcohol_voltage ?? data.alcohol_voltage ?? 0.0).toFixed(3)} V (${(info.alcohol_ppm ?? data.alcohol_ppm ?? 0).toFixed(1)} PPM)`;
@@ -187,26 +218,51 @@ async function fetchAndUpdate() {
     }
 
     // ── GPS Card & Map ───────────────────────────────────────────────────────
-    const gpsFix = data.gps_fix;
-    const lat    = data.gps_lat ? data.gps_lat.toFixed(5) : '12.84060';
-    const lon    = data.gps_lon ? data.gps_lon.toFixed(5) : '80.15340';
-    el('gps-lat').textContent = lat;
-    el('gps-lon').textContent = lon;
-    el('gps-fix-badge').className   = `card-status ${gpsFix ? 'status-ok' : 'status-nofix'}`;
-    el('gps-fix-badge').textContent = gpsFix ? 'FIX ACTIVE' : 'NO FIX';
-    el('card-gps').className        = `card ${gpsFix ? 'ok' : ''}`;
+    const gpsEnabled = data.gps_enabled !== false;
+    const mapDisabledBanner = el('map-disabled-banner');
+    const mapIframe = el('map-iframe');
+    const gpsLink = el('gps-link');
 
-    if (data.gps_lat && data.gps_lon) {
-      const mapsUrl = `https://maps.google.com/?q=${data.gps_lat},${data.gps_lon}`;
-      el('gps-link').href = mapsUrl;
-      const iframe = el('map-iframe');
-      if (iframe && !iframe.dataset.loaded) {
-        iframe.src =
-          `https://www.openstreetmap.org/export/embed.html?bbox=` +
-          `${data.gps_lon - 0.005},${data.gps_lat - 0.005},` +
-          `${data.gps_lon + 0.005},${data.gps_lat + 0.005}` +
-          `&layer=mapnik&marker=${data.gps_lat},${data.gps_lon}`;
-        iframe.dataset.loaded = "true";
+    if (!gpsEnabled) {
+      el('gps-lat').textContent = 'DISABLED';
+      el('gps-lon').textContent = 'GPS OFF';
+      el('gps-fix-badge').className = 'card-status status-disabled';
+      el('gps-fix-badge').textContent = 'DISABLED';
+      el('card-gps').className = 'card';
+      setCard('card-gps-speed', '0.0', 'km/h — GPS Inactive', 'status-disabled', 'DISABLED');
+
+      if (mapDisabledBanner) mapDisabledBanner.style.display = 'block';
+      if (mapIframe) mapIframe.style.display = 'none';
+      if (gpsLink) gpsLink.style.display = 'none';
+    } else {
+      if (mapDisabledBanner) mapDisabledBanner.style.display = 'none';
+      if (mapIframe) mapIframe.style.display = 'block';
+      if (gpsLink) gpsLink.style.display = 'inline-block';
+
+      const gpsFix = data.gps_fix;
+      const lat    = data.gps_lat ? data.gps_lat.toFixed(5) : '12.84060';
+      const lon    = data.gps_lon ? data.gps_lon.toFixed(5) : '80.15340';
+      el('gps-lat').textContent = lat;
+      el('gps-lon').textContent = lon;
+      el('gps-fix-badge').className   = `card-status ${gpsFix ? 'status-ok' : 'status-nofix'}`;
+      el('gps-fix-badge').textContent = gpsFix ? 'FIX ACTIVE' : 'NO FIX';
+      el('card-gps').className        = `card ${gpsFix ? 'ok' : ''}`;
+
+      const gpsSpd = data.gps_speed_kmh ?? 0;
+      setCard('card-gps-speed', gpsSpd.toFixed(1), 'km/h',
+              'status-ok', gpsFix ? 'GPS SPEED' : 'NO FIX');
+
+      if (data.gps_lat && data.gps_lon) {
+        const mapsUrl = `https://maps.google.com/?q=${data.gps_lat},${data.gps_lon}`;
+        if (gpsLink) gpsLink.href = mapsUrl;
+        if (mapIframe && !mapIframe.dataset.loaded) {
+          mapIframe.src =
+            `https://www.openstreetmap.org/export/embed.html?bbox=` +
+            `${data.gps_lon - 0.005},${data.gps_lat - 0.005},` +
+            `${data.gps_lon + 0.005},${data.gps_lat + 0.005}` +
+            `&layer=mapnik&marker=${data.gps_lat},${data.gps_lon}`;
+          mapIframe.dataset.loaded = "true";
+        }
       }
     }
 

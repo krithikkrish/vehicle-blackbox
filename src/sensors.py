@@ -28,7 +28,9 @@ except Exception as e:
 
 
 class SensorInterface:
-    def __init__(self):
+    def __init__(self, enable_gps: bool = False):
+        self.enable_gps = enable_gps
+
         # 1. GPIO Setup
         # SW-420 DO -> GPIO 18 (Pin 12)
         self.VIBRATION_PIN = 18
@@ -68,14 +70,17 @@ class SensorInterface:
 
         # 3. GPS UART Setup (NEO-6M on GPIO 14/15)
         self.gps_serial = None
-        if SERIAL_AVAILABLE:
-            for port in ['/dev/ttyAMA0', '/dev/serial0', '/dev/ttyS0']:
-                try:
-                    self.gps_serial = serial.Serial(port, 9600, timeout=1)
-                    print(f"GPS connected on {port}")
-                    break
-                except Exception:
-                    continue
+        if self.enable_gps:
+            if SERIAL_AVAILABLE:
+                for port in ['/dev/ttyAMA0', '/dev/serial0', '/dev/ttyS0']:
+                    try:
+                        self.gps_serial = serial.Serial(port, 9600, timeout=1)
+                        print(f"GPS connected on {port}")
+                        break
+                    except Exception:
+                        continue
+        else:
+            print("GPS sensor is DISABLED by configuration.")
 
     def read_vibration(self):
         """
@@ -161,14 +166,17 @@ class SensorInterface:
 
     def read_gps(self):
         """Read latest GPS coordinates via UART."""
+        if not self.enable_gps:
+            return {"status": "DISABLED", "location": "GPS Disabled by Configuration", "nmea": None}
+
         if self.gps_serial and self.gps_serial.in_waiting:
             try:
                 line = self.gps_serial.readline().decode('utf-8', errors='ignore').strip()
                 if line.startswith('$'):
-                    return {"nmea": line}
+                    return {"status": "ACTIVE", "nmea": line}
             except Exception:
                 pass
-        return {"nmea": "$GPRMC,123519,A,4807.038,N,01131.000,E,022.4,084.4,230394,003.1,W*6A"}
+        return {"status": "SIMULATED", "nmea": "$GPRMC,123519,A,4807.038,N,01131.000,E,022.4,084.4,230394,003.1,W*6A"}
 
     def read_all(self):
         """Return a structured dictionary of all current sensor readings."""

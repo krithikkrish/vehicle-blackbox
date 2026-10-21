@@ -83,20 +83,67 @@ The system uses a **dual-storage strategy** to ensure data is never lost:
 
 ---
 
-## 🚀 Getting Started
+## 🚀 Ready-to-Run Code Versions
 
-For detailed wiring diagrams, pin connections, library installation, and step-by-step run instructions, see the **[Setup Guide](SETUP_GUIDE.md)**.
+The repository provides **3 distinct, fully ready-to-run versions** tailored for modular lab testing and avoiding hardware UART serial contention:
 
-**Quick start** (if hardware is already wired):
-```bash
-git clone https://github.com/krithikkrish/vehicle-blackbox.git
-cd vehicle-blackbox
-pip3 install -r requirements.txt
-python3 src/main.py
-```
+### 1️⃣ Version 1: GSM Only (No GPS) — Default `main.py`
+Ideal when you do not have the GPS module connected or want UART pins 14/15 completely free.
+- **GSM Alerts**: **ACTIVE** (Dispatches emergency SOS SMS on crash/impact via SIM800L or simulation).
+- **GPS Receiver**: **DISABLED** (Serial thread omitted, no UART port lock).
+- **Run Web Dashboard**:
+  ```bash
+  python3 main.py
+  ```
+- **Run CLI**:
+  ```bash
+  python3 src/main.py
+  ```
+- **Web Dashboard**: `http://blackbox.local:5000`
 
 ---
 
-## 🗺️ What's Coming Next
+### 2️⃣ Version 2: GPS Only (No GSM) — `main_gps_only.py`
+Ideal when you want satellite tracking, live OpenStreetMap visualization, and speed calculation without a SIM module.
+- **GPS Receiver**: **ACTIVE** (NEO-6M NMEA parser on `/dev/ttyAMA0` @ 9600 baud).
+- **GSM Alerts**: **DISABLED** (No SMS attempts, bypassing port conflicts).
+- **Run Web Dashboard**:
+  ```bash
+  python3 main_gps_only.py
+  ```
+- **Run CLI**:
+  ```bash
+  python3 src/main_gps_only.py
+  ```
+- **Web Dashboard**: `http://blackbox.local:5000`
 
-- [ ] **Flask Web Dashboard** for remote live monitoring of the sensor data
+---
+
+### 3️⃣ Version 3: Both GPS & GSM Active — `main_full.py`
+Full production-ready blackbox deployment with all sensors and modules operating simultaneously.
+- **GPS Receiver**: **ACTIVE** (NEO-6M on `/dev/ttyAMA0` UART).
+- **GSM Alerts**: **ACTIVE** (SIM800L on `/dev/ttyUSB0` with live GPS location link in SOS SMS).
+- **Run Web Dashboard**:
+  ```bash
+  python3 main_full.py
+  ```
+- **Run CLI**:
+  ```bash
+  python3 src/main_full.py
+  ```
+- **Web Dashboard**: `http://blackbox.local:5000`
+
+---
+
+## 🛠️ Hardware Wiring & Pin Configuration
+
+For detailed pin connections, see **[PIN_CONFIGURATION.md](PIN_CONFIGURATION.md)**:
+- **ADS1115 ADC**: I2C (SDA: GPIO 2 / Pin 3, SCL: GPIO 3 / Pin 5, Addr `0x48`, 5V)
+- **MQ-3 Alcohol**: Analog into ADS1115 Channel A0 (`ADS.P0`)
+- **LM35 Temperature**: Analog into ADS1115 Channel A2 (`ADS.P2`)
+- **SW-420 Vibration**: Digital into GPIO 18 (Pin 12)
+- **Status / Alert LED**: GPIO 17 (Pin 11) with 220Ω resistor
+- **NEO-6M GPS**: UART TX/RX on GPIO 14 & 15 (`/dev/ttyAMA0`)
+- **SIM800L GSM**: USB-to-TTL on `/dev/ttyUSB0` (or `/dev/ttyAMA0` in GSM-only mode)
+- **Hall Effect Speed**: GPIO 22 (Pin 15)
+

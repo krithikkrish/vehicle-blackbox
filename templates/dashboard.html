@@ -12,7 +12,10 @@
 
 <!-- ── Navbar ──────────────────────────────────────────────────────────────── -->
 <nav class="navbar">
-  <div class="brand">🚗 <span>VEHICLE BLACK BOX</span></div>
+  <div class="brand">
+    🚗 <span>VEHICLE BLACK BOX</span>
+    <span id="mode-badge" class="mode-badge gsm-only">MODE: GSM ONLY</span>
+  </div>
   <nav>
     <a href="/" class="active">Dashboard</a>
     <a href="/logs">Crash Logs</a>
@@ -30,6 +33,7 @@
   </div>
   <div class="crash-grid">
     <div class="crash-item"><span class="crash-label">Trigger:</span> <span id="crash-trigger" class="crash-val">SW-420 Vibration Impact</span></div>
+    <div class="crash-item"><span class="crash-label">Emergency SMS:</span> <span id="crash-sms-status" class="crash-val">—</span></div>
     <div class="crash-item"><span class="crash-label">Impact Time:</span> <span id="crash-time" class="crash-val">—</span></div>
     <div class="crash-item"><span class="crash-label">Impact Speed:</span> <span id="crash-speed" class="crash-val">0.0 km/h</span></div>
     <div class="crash-item"><span class="crash-label">Coordinates:</span> <span id="crash-location" class="crash-val">—</span></div>
@@ -126,10 +130,13 @@
   </div>
 
   <!-- Live Map -->
-  <div class="map-card">
+  <div class="map-card" id="map-card">
     <div class="map-header">
       🗺 Live GPS Map
       <a id="gps-link" href="#" target="_blank">Open in Google Maps ↗</a>
+    </div>
+    <div id="map-disabled-banner" class="map-disabled-overlay" style="display: none;">
+      🛰️ GPS Tracking is DISABLED in this Mode (GSM Only / Free UART)
     </div>
     <iframe
       id="map-iframe"
