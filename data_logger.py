@@ -24,9 +24,11 @@ def save_crash_dump(buffer_snapshot: list, trigger: str = "crash") -> str:
     filepath = os.path.join(LOG_DIR, filename)
 
     payload = {
-        "event"     : trigger,
-        "timestamp" : datetime.now().isoformat(),
-        "entries"   : buffer_snapshot,
+        "event"        : trigger,
+        "timestamp"    : datetime.now().isoformat(),
+        "duration_sec" : 10,
+        "sample_count" : len(buffer_snapshot),
+        "entries"      : buffer_snapshot,
     }
 
     with open(filepath, "w") as f:

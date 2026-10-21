@@ -154,6 +154,33 @@ async function fetchAndUpdate() {
           link.textContent = `${info.filename} (Click to inspect log)`;
           link.href = `/logs/${info.filename}`;
         }
+
+        // ── Render 10-second Pre-Crash Telemetry Table ───────────────
+        const tbody = el('pre-crash-table-body');
+        const history = info.history_10s || [];
+        if (tbody && history.length > 0) {
+          const badge = el('pre-crash-samples-badge');
+          if (badge) badge.textContent = `${info.samples_count || history.length} Samples (Last 10s)`;
+
+          // Render last 20 rows leading directly to impact
+          const rowsToRender = history.slice(-20);
+          tbody.innerHTML = rowsToRender.map((row, idx) => {
+            const isImpact = row.vibration;
+            const rowClass = isImpact ? 'class="crash-row-impact"' : '';
+            const spd = Number(row.speed || 0).toFixed(1);
+            const tmp = Number(row.temp || 25.0).toFixed(1);
+            const alc = Number(row.alc_v || 0).toFixed(3);
+            const tStr = row.time || `-${((rowsToRender.length - idx) * 0.1).toFixed(1)}s`;
+
+            return `<tr ${rowClass}>
+              <td>${tStr}</td>
+              <td>${spd}</td>
+              <td>${isImpact ? '💥 IMPACT DETECTED' : 'Normal'}</td>
+              <td>${tmp} °C</td>
+              <td>${alc} V</td>
+            </tr>`;
+          }).join('');
+        }
       } else {
         crashBox.style.display = 'none';
       }

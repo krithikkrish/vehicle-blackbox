@@ -5,8 +5,8 @@ import time
 import os
 
 class CircularBuffer:
-    def __init__(self, max_seconds=15, sample_rate_hz=10):
-        # Calculate max items based on time and frequency
+    def __init__(self, max_seconds=10, sample_rate_hz=10):
+        # Calculate max items based on time and frequency (10s * 10Hz = 100 samples)
         self.max_items = max_seconds * sample_rate_hz
         self.buffer = deque(maxlen=self.max_items)
         

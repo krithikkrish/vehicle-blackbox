@@ -264,10 +264,23 @@ def logging_loop():
                 logger.warning("🚨 CRASH DETECTED via Vibration/Deceleration!")
                 set_led(True)  # Turn on LED indicator on GPIO 17
 
-                # Dump 15-second circular buffer to file
-                snapshot = circular_buffer.dump_buffer()
-                dump_path = data_logger.save_crash_dump(snapshot, trigger="crash")
+                # Capture exactly the LAST 10 SECONDS of circular buffer (100 samples at 10Hz)
+                snapshot_10s = circular_buffer.dump_last_seconds(seconds=10)
+                dump_path = data_logger.save_crash_dump(snapshot_10s, trigger="crash")
                 filename = os.path.basename(dump_path)
+
+                # Format 10-second pre-crash history for dashboard display
+                history_10s = []
+                for entry in snapshot_10s:
+                    ts = entry.get("timestamp", "")
+                    ts_short = ts[-12:] if ts and len(ts) >= 12 else ts
+                    history_10s.append({
+                        "time": ts_short,
+                        "speed": round(max(float(entry.get("gps_speed_kmh", 0) or 0), float(entry.get("hall_speed_kmh", 0) or 0)), 1),
+                        "vibration": bool(entry.get("vibration")),
+                        "temp": round(float(entry.get("temperature_c", 25.0) or 25.0), 1),
+                        "alc_v": round(float(entry.get("alcohol_voltage", 0.0) or 0.0), 3)
+                    })
 
                 # Record crash details
                 crash_details = {
@@ -280,6 +293,9 @@ def logging_loop():
                     "alcohol_voltage": s["alcohol_voltage"],
                     "alcohol_ppm": s["alcohol_ppm"],
                     "filename": filename,
+                    "history_10s": history_10s,
+                    "duration_sec": 10,
+                    "samples_count": len(snapshot_10s)
                 }
 
                 update_state(

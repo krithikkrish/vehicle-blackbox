@@ -1,13 +1,13 @@
 """
 circular_buffer.py
 Thread-safe rolling circular buffer for sensor readings.
-Fixed depth: last N samples are always retained.
+Fixed depth: retains rolling window of sensor readings.
 """
 
 from collections import deque
 import threading
 
-BUFFER_DEPTH = 300  # ~30 seconds at 10 Hz
+BUFFER_DEPTH = 300  # 30 seconds at 10 Hz
 
 _buffer: deque = deque(maxlen=BUFFER_DEPTH)
 _lock = threading.Lock()
@@ -16,7 +16,7 @@ _lock = threading.Lock()
 def log_reading(reading: dict) -> None:
     """Append a sensor reading dict to the circular buffer."""
     with _lock:
-        _buffer.append(reading)
+        _buffer.append(dict(reading))
 
 
 def get_latest() -> dict | None:
@@ -26,9 +26,16 @@ def get_latest() -> dict | None:
 
 
 def dump_buffer() -> list:
-    """Return a snapshot copy of the entire buffer (for crash dump)."""
+    """Return a snapshot copy of the entire buffer."""
     with _lock:
         return list(_buffer)
+
+
+def dump_last_seconds(seconds: int = 10) -> list:
+    """Return readings from the last N seconds (at 10 Hz)."""
+    with _lock:
+        count = seconds * 10
+        return list(_buffer)[-count:]
 
 
 def get_all() -> list:

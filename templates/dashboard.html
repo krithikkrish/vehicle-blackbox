@@ -37,6 +37,30 @@
     <div class="crash-item"><span class="crash-label">Alcohol Sensor:</span> <span id="crash-alc" class="crash-val">—</span></div>
     <div class="crash-item full-width"><span class="crash-label">Crash Dump File:</span> <a id="crash-dump-link" href="/logs" class="crash-link">—</a></div>
   </div>
+
+  <!-- Pre-Crash 10-Second Telemetry Table -->
+  <div class="pre-crash-section">
+    <div class="pre-crash-header">
+      <span>⏱️ Last 10 Seconds Pre-Crash Telemetry (Blackbox Buffer)</span>
+      <span id="pre-crash-samples-badge" class="badge-samples">100 Samples</span>
+    </div>
+    <div class="pre-crash-table-wrap">
+      <table class="pre-crash-table">
+        <thead>
+          <tr>
+            <th>Time</th>
+            <th>Speed (km/h)</th>
+            <th>Vibration</th>
+            <th>Cabin Temp (°C)</th>
+            <th>MQ-3 Alcohol (V)</th>
+          </tr>
+        </thead>
+        <tbody id="pre-crash-table-body">
+          <!-- Populated by dashboard.js with last 10 seconds of data -->
+        </tbody>
+      </table>
+    </div>
+  </div>
 </div>
 
 <!-- ── Sensor Cards Grid ────────────────────────────────────────────────────── -->

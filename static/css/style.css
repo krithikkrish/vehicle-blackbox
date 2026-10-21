@@ -226,6 +226,64 @@ body {
   font-weight: 600;
 }
 
+/* ── Pre-Crash 10-Second Telemetry Table ─────────────── */
+.pre-crash-section {
+  margin-top: 1.25rem;
+  border-top: 1px solid rgba(239, 68, 68, 0.3);
+  padding-top: 0.85rem;
+}
+.pre-crash-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #fca5a5;
+  margin-bottom: 0.6rem;
+}
+.badge-samples {
+  background: rgba(239, 68, 68, 0.3);
+  color: #fecaca;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.pre-crash-table-wrap {
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  border-radius: 6px;
+  background: rgba(15, 23, 42, 0.85);
+}
+.pre-crash-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+  font-family: monospace;
+}
+.pre-crash-table th {
+  background: rgba(30, 41, 59, 0.95);
+  color: #94a3b8;
+  padding: 0.45rem 0.6rem;
+  text-align: left;
+  position: sticky;
+  top: 0;
+  border-bottom: 1px solid rgba(239, 68, 68, 0.3);
+  font-size: 0.75rem;
+}
+.pre-crash-table td {
+  padding: 0.4rem 0.6rem;
+  border-bottom: 1px solid rgba(51, 65, 85, 0.25);
+  color: #e2e8f0;
+}
+.pre-crash-table tr.crash-row-impact {
+  background: rgba(239, 68, 68, 0.3);
+  color: #fca5a5;
+  font-weight: bold;
+}
+
+
 /* ── Speed Chart ────────────────────────────────────────── */
 .chart-card {
   grid-column: 1 / -1;
