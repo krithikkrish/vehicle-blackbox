@@ -22,6 +22,23 @@
 <!-- ── Status Banner ────────────────────────────────────────────────────────── -->
 <div id="status-banner" class="starting">⏳  SYSTEM STARTING …</div>
 
+<!-- ── Crash Alert Box (Appears automatically when crash occurs) ─────────────── -->
+<div id="crash-alert-box" class="crash-alert-card" style="display: none;">
+  <div class="crash-alert-header">
+    <div class="crash-title">🚨 CRASH DETECTED — EMERGENCY PROTOCOL ACTIVE</div>
+    <button id="btn-reset-crash" class="btn-reset" onclick="resetCrash()">Dismiss / Reset Alarm</button>
+  </div>
+  <div class="crash-grid">
+    <div class="crash-item"><span class="crash-label">Trigger:</span> <span id="crash-trigger" class="crash-val">SW-420 Vibration Impact</span></div>
+    <div class="crash-item"><span class="crash-label">Impact Time:</span> <span id="crash-time" class="crash-val">—</span></div>
+    <div class="crash-item"><span class="crash-label">Impact Speed:</span> <span id="crash-speed" class="crash-val">0.0 km/h</span></div>
+    <div class="crash-item"><span class="crash-label">Coordinates:</span> <span id="crash-location" class="crash-val">—</span></div>
+    <div class="crash-item"><span class="crash-label">Cabin Temp:</span> <span id="crash-temp" class="crash-val">—</span></div>
+    <div class="crash-item"><span class="crash-label">Alcohol Sensor:</span> <span id="crash-alc" class="crash-val">—</span></div>
+    <div class="crash-item full-width"><span class="crash-label">Crash Dump File:</span> <a id="crash-dump-link" href="/logs" class="crash-link">—</a></div>
+  </div>
+</div>
+
 <!-- ── Sensor Cards Grid ────────────────────────────────────────────────────── -->
 <div class="grid">
 
@@ -48,7 +65,7 @@
   <div class="card ok" id="card-hall">
     <div class="card-label">⚡ Wheel Speed</div>
     <div class="card-value">0.0</div>
-    <div class="card-unit">km/h — Hall Effect</div>
+    <div class="card-unit">km/h — Hall Effect (GPIO 22)</div>
     <span class="card-status status-ok">NORMAL</span>
   </div>
 
@@ -56,7 +73,7 @@
   <div class="card ok" id="card-alcohol">
     <div class="card-label">🍺 Alcohol (MQ-3)</div>
     <div class="card-value">0.000</div>
-    <div class="card-unit">Volts (ADS1115)</div>
+    <div class="card-unit">Volts (ADS1115 A0)</div>
     <span class="card-status status-ok">NORMAL</span>
   </div>
 
@@ -76,11 +93,12 @@
     <span class="card-status status-ok">NORMAL</span>
   </div>
 
-
   <!-- Speed Chart -->
   <div class="chart-card">
-    <div class="chart-title">📈 Speed History — Last 60 ticks</div>
-    <canvas id="speed-chart"></canvas>
+    <div class="chart-title">📈 Speed Telemetry (km/h)</div>
+    <div class="chart-wrapper" style="position: relative; height: 160px; width: 100%;">
+      <canvas id="speed-chart"></canvas>
+    </div>
   </div>
 
   <!-- Live Map -->

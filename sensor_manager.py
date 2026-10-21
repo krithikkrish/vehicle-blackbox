@@ -16,7 +16,7 @@ Pin Configuration (per Hardware Specification):
 import threading
 import time
 import logging
-import random
+import os
 from datetime import datetime
 
 logger = logging.getLogger(__name__)
@@ -36,18 +36,35 @@ state = {
     "temperature_voltage": 0.0,
     "vibration"          : False,
     "crash_detected"     : False,
+    "last_crash"         : None,
     "system_status"      : "STARTING",
 }
 state_lock = threading.Lock()
+
+# Latching variables for crash state
+_crash_latched_until = 0.0
+CRASH_LATCH_DURATION_SEC = 20.0  # Hold crash alert on dashboard for 20 seconds
+
 
 def update_state(**kwargs):
     with state_lock:
         state.update(kwargs)
         state["timestamp"] = datetime.now().isoformat()
 
+
 def get_state() -> dict:
     with state_lock:
         return dict(state)
+
+
+def reset_crash_state():
+    """Manually clear latched crash alert and turn off LED."""
+    global _crash_latched_until
+    _crash_latched_until = 0.0
+    set_led(False)
+    update_state(crash_detected=False, system_status="NORMAL")
+    logger.info("Crash alert acknowledged and cleared by user.")
+
 
 # ── LED Controller (GPIO 17) ────────────────────────────────────────────────
 def set_led(active: bool):
@@ -66,7 +83,7 @@ def gps_thread():
     """Parse NMEA sentences from NEO-6M over /dev/ttyAMA0 (fallback /dev/serial0)."""
     GPS_PORTS = ["/dev/ttyAMA0", "/dev/serial0", "/dev/ttyS0"]
     gps_serial = None
-    
+
     for port in GPS_PORTS:
         try:
             import serial
@@ -77,15 +94,14 @@ def gps_thread():
             continue
 
     if not gps_serial:
-        logger.warning("GPS hardware not available. Using mock GPS coordinates.")
-        while True:
-            update_state(
-                gps_lat=12.8406,
-                gps_lon=80.1534,
-                gps_speed_kmh=round(random.uniform(20.0, 45.0), 1),
-                gps_fix=True,
-            )
-            time.sleep(1)
+        logger.info("GPS serial hardware not active. Baseline GPS coordinates loaded.")
+        update_state(
+            gps_lat=12.8406,
+            gps_lon=80.1534,
+            gps_speed_kmh=0.0,  # Stationary on bench: 0 km/h
+            gps_fix=True,
+        )
+        return
 
     import pynmea2
     try:
@@ -103,12 +119,12 @@ def gps_thread():
                                 gps_fix       = True,
                             )
                         else:
-                            update_state(gps_fix=False)
+                            update_state(gps_fix=False, gps_speed_kmh=0.0)
                 except pynmea2.ParseError:
                     pass
     except Exception as exc:
         logger.error("GPS thread error: %s", exc)
-        update_state(gps_fix=False, system_status="GPS_ERROR")
+        update_state(gps_fix=False, gps_speed_kmh=0.0, system_status="GPS_ERROR")
 
 
 # ── Hall Effect Speed Thread (GPIO 22) ──────────────────────────────────────
@@ -140,10 +156,8 @@ def hall_thread():
             update_state(hall_speed_kmh=round(speed_kmh, 1))
 
     except Exception as exc:
-        logger.warning("Hall thread hardware unavailable (%s). Using mock speed.", exc)
-        while True:
-            update_state(hall_speed_kmh=round(random.uniform(25.0, 40.0), 1))
-            time.sleep(1)
+        logger.info("Hall thread running in stationary mode (%s). Speed = 0.0 km/h.", exc)
+        update_state(hall_speed_kmh=0.0)
 
 
 # ── ADS1115 Analog Sensors Thread (MQ-3 on A0, Temp on A2) ──────────────────
@@ -188,25 +202,20 @@ def ads1115_thread():
             time.sleep(0.1)  # 10 Hz
 
     except Exception as exc:
-        logger.warning("ADS1115 hardware unavailable (%s). Using mock analog data.", exc)
-        while True:
-            v_alc = round(random.uniform(0.3, 0.45), 3)
-            v_tmp = round(random.uniform(0.24, 0.28), 3)
-            update_state(
-                alcohol_voltage     = v_alc,
-                alcohol_ppm         = round((v_alc / 5.0) * 100.0, 2),
-                alcohol_alert       = v_alc >= 0.40,
-                temperature_voltage = v_tmp,
-                temperature_c       = round(v_tmp * 100.0, 2)
-            )
-            time.sleep(0.5)
+        logger.info("ADS1115 offline (%s). Using steady baseline.", exc)
+        update_state(
+            alcohol_voltage     = 0.35,
+            alcohol_ppm         = 7.0,
+            alcohol_alert       = False,
+            temperature_voltage = 0.25,
+            temperature_c       = 25.0
+        )
 
 
 # ── SW-420 Vibration Thread (GPIO 18) ────────────────────────────────────────
 def vibration_thread():
     """
     Monitor SW-420 digital vibration sensor on GPIO 18 (Pin 12).
-    Specification: HIGH when vibration detected, LOW when stable.
     """
     try:
         import RPi.GPIO as GPIO
@@ -219,14 +228,10 @@ def vibration_thread():
         while True:
             triggered = (GPIO.input(VIB_PIN) == GPIO.HIGH)
             update_state(vibration=triggered)
-            time.sleep(0.05)  # 20 Hz for fast transient response
+            time.sleep(0.05)  # 20 Hz sampling
 
     except Exception as exc:
-        logger.warning("Vibration sensor hardware unavailable (%s). Using mock mode.", exc)
-        while True:
-            # 5% chance of mock transient vibration
-            update_state(vibration=(random.random() < 0.05))
-            time.sleep(0.5)
+        logger.warning("Vibration sensor hardware unavailable: %s", exc)
 
 
 # ── Main logging loop (combines state → circular buffer) ─────────────────────
@@ -235,6 +240,7 @@ def logging_loop():
     Central tick: every 100 ms, snapshot current state into circular buffer
     and run crash detection.
     """
+    global _crash_latched_until
     import circular_buffer
     import crash_detection
     import alert_dispatcher
@@ -247,23 +253,53 @@ def logging_loop():
         s = get_state()
         circular_buffer.log_reading(s)
 
-        # Crash detection: SW-420 vibration + sudden speed drop
         curr_speed = max(s["gps_speed_kmh"], s["hall_speed_kmh"])
+        now = time.time()
+
+        # Check if a new crash is triggered
         if crash_detection.detect_crash(prev_speed, curr_speed, s["vibration"]):
-            logger.warning("CRASH DETECTED!")
+            # Trigger once, then latch
+            if now > _crash_latched_until:
+                _crash_latched_until = now + CRASH_LATCH_DURATION_SEC
+                logger.warning("🚨 CRASH DETECTED via Vibration/Deceleration!")
+                set_led(True)  # Turn on LED indicator on GPIO 17
+
+                # Dump 15-second circular buffer to file
+                snapshot = circular_buffer.dump_buffer()
+                dump_path = data_logger.save_crash_dump(snapshot, trigger="crash")
+                filename = os.path.basename(dump_path)
+
+                # Record crash details
+                crash_details = {
+                    "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    "trigger": "SW-420 Vibration Impact" if s["vibration"] else "Sudden Deceleration",
+                    "speed_kmh": round(curr_speed, 1),
+                    "gps_lat": s["gps_lat"],
+                    "gps_lon": s["gps_lon"],
+                    "temperature_c": s["temperature_c"],
+                    "alcohol_voltage": s["alcohol_voltage"],
+                    "alcohol_ppm": s["alcohol_ppm"],
+                    "filename": filename,
+                }
+
+                update_state(
+                    crash_detected=True,
+                    last_crash=crash_details,
+                    system_status="CRASH"
+                )
+
+                # Dispatch emergency SOS SMS
+                alert_dispatcher.send_crash_sms(
+                    lat=s["gps_lat"], lon=s["gps_lon"], speed_kmh=curr_speed
+                )
+
+        # Check latched state
+        if now < _crash_latched_until:
             update_state(crash_detected=True, system_status="CRASH")
-            set_led(True)  # Turn on LED indicator on GPIO 17
-            snapshot = circular_buffer.dump_buffer()
-            data_logger.save_crash_dump(snapshot, trigger="crash")
-            alert_dispatcher.send_crash_sms(
-                lat=s["gps_lat"], lon=s["gps_lon"], speed_kmh=prev_speed
-            )
+            set_led(True)
         elif s["alcohol_alert"]:
-            update_state(system_status="ALCOHOL_ALERT")
-            set_led(True)  # Turn on LED indicator on GPIO 17
-            alert_dispatcher.send_alcohol_sms(
-                lat=s["gps_lat"], lon=s["gps_lon"], voltage=s["alcohol_voltage"]
-            )
+            update_state(crash_detected=False, system_status="ALCOHOL_ALERT")
+            set_led(True)
         else:
             update_state(crash_detected=False, system_status="NORMAL")
             set_led(False)

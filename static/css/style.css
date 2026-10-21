@@ -155,6 +155,77 @@ body {
   filter: invert(0.9) hue-rotate(180deg);   /* dark-mode map */
 }
 
+/* ── Crash Alert Card (Displayed upon impact) ───────── */
+.crash-alert-card {
+  background: linear-gradient(135deg, #450a0a 0%, #1e1115 100%);
+  border: 2px solid var(--red);
+  border-radius: 12px;
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+  animation: pulseCrash 1.5s infinite alternate;
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.4);
+}
+@keyframes pulseCrash {
+  from { box-shadow: 0 0 10px rgba(239, 68, 68, 0.3); }
+  to   { box-shadow: 0 0 25px rgba(239, 68, 68, 0.7); }
+}
+.crash-alert-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid rgba(239, 68, 68, 0.3);
+  padding-bottom: 0.75rem;
+}
+.crash-title {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #fca5a5;
+  letter-spacing: 0.05em;
+}
+.btn-reset {
+  background: #ef4444;
+  color: white;
+  border: none;
+  padding: 0.45rem 1rem;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.btn-reset:hover {
+  background: #dc2626;
+}
+.crash-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.75rem;
+}
+.crash-item {
+  font-size: 0.85rem;
+  color: #cbd5e1;
+}
+.crash-item.full-width {
+  grid-column: 1 / -1;
+  padding-top: 0.4rem;
+  border-top: 1px dashed rgba(239, 68, 68, 0.2);
+}
+.crash-label {
+  color: #94a3b8;
+  font-weight: 600;
+}
+.crash-val {
+  color: #ffffff;
+  font-weight: 700;
+  margin-left: 0.35rem;
+}
+.crash-link {
+  color: #38bdf8;
+  text-decoration: underline;
+  font-weight: 600;
+}
+
 /* ── Speed Chart ────────────────────────────────────────── */
 .chart-card {
   grid-column: 1 / -1;
@@ -171,7 +242,17 @@ body {
   text-transform: uppercase;
   margin-bottom: 0.75rem;
 }
-#speed-chart { width: 100%; height: 140px; }
+.chart-wrapper {
+  position: relative;
+  height: 160px;
+  width: 100%;
+}
+#speed-chart {
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
+}
+
 
 /* ── Footer ─────────────────────────────────────────────── */
 footer {

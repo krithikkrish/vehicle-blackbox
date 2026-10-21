@@ -95,6 +95,14 @@ def api_log_detail(filename: str):
     return jsonify(log)
 
 
+@app.route("/api/reset_crash", methods=["POST", "GET"])
+def api_reset_crash():
+    """Acknowledge and reset the crash alert state."""
+    sensor_manager.reset_crash_state()
+    return jsonify({"status": "ok", "message": "Crash alarm reset"})
+
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Entry point
 # ─────────────────────────────────────────────────────────────────────────────
