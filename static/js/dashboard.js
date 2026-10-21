@@ -149,6 +149,13 @@ async function fetchAndUpdate() {
             vib ? 'status-alert' : 'status-ok',
             vib ? 'IMPACT' : 'STABLE');
 
+    // ── Temperature (LM35 via ADS1115 A2) ─────────────────────────────────
+    const tempC = data.temperature_c ?? 0;
+    setCard('card-temp', tempC.toFixed(1), '°C',
+            tempC > 60 ? 'status-alert' : tempC > 45 ? 'status-warn' : 'status-ok',
+            tempC > 60 ? 'OVERHEAT' : 'NORMAL');
+
+
     // ── Timestamp ─────────────────────────────────────────────────────────
     if (data.timestamp) {
       el('last-updated').textContent = new Date(data.timestamp).toLocaleTimeString();

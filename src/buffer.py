@@ -37,13 +37,22 @@ class CSVLogger:
         
     def log_reading(self, reading):
         """Append a single reading to the continuous CSV log."""
+        # Flatten row for clean CSV logging
+        row = {}
+        for k, v in reading.items():
+            if isinstance(v, dict):
+                # Extract simple sub-values if not already present
+                for sub_k, sub_v in v.items():
+                    col_name = f"{k}_{sub_k}"
+                    if col_name not in reading and not isinstance(sub_v, dict):
+                        row[col_name] = sub_v
+            else:
+                row[k] = v
+
         file_exists = os.path.isfile(self.filename)
-        
         with open(self.filename, mode='a', newline='') as csvfile:
-            writer = csv.DictWriter(csvfile, fieldnames=reading.keys())
-            
+            writer = csv.DictWriter(csvfile, fieldnames=row.keys())
             if not file_exists or not self.headers_written:
                 writer.writeheader()
                 self.headers_written = True
-                
-            writer.writerow(reading)
+            writer.writerow(row)

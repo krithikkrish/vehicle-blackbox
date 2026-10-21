@@ -1,6 +1,6 @@
 # 🚗 Vehicle Black Box Prototype
 
-> ⚠️ **Teammates:** If you are looking for instructions on how to wire the hardware and run the code, **[CLICK HERE TO READ THE SETUP GUIDE](SETUP_GUIDE.md)**!
+> ⚠️ **Teammates:** Check out the **[SETUP GUIDE](SETUP_GUIDE.md)** and the **[PIN CONFIGURATION GUIDE](PIN_CONFIGURATION.md)** for wiring and pinouts!
 
 ---
 

@@ -16,8 +16,8 @@ except Exception as e:
         def cleanup(self): pass
     GPIO = MockGPIO()
 
-# Replace with the actual GPIO BCM pin number you connect the SW-420 to
-VIBRATION_PIN = 17
+# SW-420 DO connects to GPIO18 (Pin 12) as per SETUP_GUIDE.md
+VIBRATION_PIN = 18
 
 def setup():
     GPIO.setmode(GPIO.BCM)

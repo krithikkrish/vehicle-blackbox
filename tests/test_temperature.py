@@ -1,52 +1,62 @@
-#!/Library/Frameworks/Python.framework/Versions/3.14/bin/python3
-import os
-import glob
+#!/usr/bin/env python3
+"""
+test_temperature.py
+Tests the analog temperature sensor (e.g. LM35) connected via ADS1115 Channel A2.
+Specification:
+  - VCC  → 5V (Pin 4)
+  - GND  → Ground (Pin 6)
+  - AOUT → ADS1115 Channel A2 (I2C 0x48)
+  - Output: 10mV/°C -> Celsius = Voltage * 100.0
+"""
+
 import time
 import random
 
-# Base directory for 1-Wire devices on Raspberry Pi
-BASE_DIR = '/sys/bus/w1/devices/'
+try:
+    import board
+    import busio
+    import adafruit_ads1x15.ads1115 as ADS
+    from adafruit_ads1x15.analog_in import AnalogIn
+    HARDWARE_AVAILABLE = True
+except Exception as e:
+    print(f"Hardware/library import failed ({e}). Running in MOCK mode.")
+    HARDWARE_AVAILABLE = False
 
-def read_temp_raw(device_file):
-    with open(device_file, 'r') as f:
-        lines = f.readlines()
-    return lines
-
-def get_temperature():
-    try:
-        # Find the DS18B20 folder (starts with 28-)
-        device_folder = glob.glob(BASE_DIR + '28*')[0]
-        device_file = device_folder + '/w1_slave'
-        
-        lines = read_temp_raw(device_file)
-        # Wait until the sensor returns YES
-        while lines[0].strip()[-3:] != 'YES':
-            time.sleep(0.2)
-            lines = read_temp_raw(device_file)
-            
-        equals_pos = lines[1].find('t=')
-        if equals_pos != -1:
-            temp_string = lines[1][equals_pos+2:]
-            temp_c = float(temp_string) / 1000.0
-            return temp_c
-            
-    except (IndexError, FileNotFoundError):
-        # We are on a Mac or the sensor is not wired correctly!
-        # Return a mock value instead of crashing.
-        return random.uniform(25.0, 30.0)
 
 def main():
-    print("Starting Temperature Test...")
-    if not os.path.exists(BASE_DIR):
-        print("Warning: /sys/bus/w1/devices not found. Using MOCK mode (Mac).")
-        
+    print("=" * 55)
+    print(" Testing Temperature Sensor (LM35 via ADS1115 A2)")
+    print("=" * 55)
+
+    temp_channel = None
+    if HARDWARE_AVAILABLE:
+        try:
+            i2c = busio.I2C(board.SCL, board.SDA)
+            ads = ADS.ADS1115(i2c, address=0x48)
+            ads.gain = 1  # 0 to 4.096V range
+            temp_channel = AnalogIn(ads, ADS.P2)  # Channel A2
+            print("Connected to ADS1115 at 0x48. Reading Channel A2...")
+        except Exception as e:
+            print(f"ADS1115 connection failed: {e}. Falling back to MOCK mode.")
+            temp_channel = None
+
     try:
         while True:
-            temp_c = get_temperature()
-            print(f"Temperature: {temp_c:.2f} °C")
+            if temp_channel is not None:
+                voltage = max(0.0, float(temp_channel.voltage))
+                raw_val = int(temp_channel.value)
+                celsius = voltage * 100.0  # LM35 conversion (10mV per deg C)
+            else:
+                voltage = round(random.uniform(0.24, 0.28), 3)
+                raw_val = int((voltage / 4.096) * 32767)
+                celsius = round(voltage * 100.0, 2)
+
+            print(f"[{time.strftime('%H:%M:%S')}] Temp Sensor -> Voltage: {voltage:.3f} V | Raw: {raw_val:5d} | Temp: {celsius:.2f} °C")
             time.sleep(1)
+
     except KeyboardInterrupt:
         print("\nExiting temperature test.")
+
 
 if __name__ == "__main__":
     main()

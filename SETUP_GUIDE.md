@@ -29,17 +29,37 @@ Google **"Raspberry Pi 4 GPIO pinout"** and keep that image open while wiring.
 
 ---
 
-### MQ-3 Alcohol Sensor
+### ADS1115 ADC Converter (I2C Interface)
 
-| Sensor Wire | Goes To | Pi Pin # |
-|-------------|---------|----------|
-| VCC | 5V | **Pin 2** |
-| GND | Ground | **Pin 9** |
-| DO | GPIO23 | **Pin 16** |
-
-> The blue screw on the MQ-3 adjusts sensitivity. Leave it alone for now.
+| Module Pin | Goes To | Pi Pin # |
+|------------|---------|----------|
+| **VDD** | 5V Power (CRITICAL: 5V not 3.3V) | **Pin 2 or Pin 4** |
+| **GND** | Ground | **Pin 14** |
+| **SDA** | GPIO 2 (I2C Data) | **Pin 3** |
+| **SCL** | GPIO 3 (I2C Clock) | **Pin 5** |
 
 ---
+
+### MQ-3 Alcohol / Gas Sensor (Analog via ADS1115)
+
+| Sensor Wire | Goes To | Connection |
+|-------------|---------|------------|
+| VCC | 5V | **Pi Pin 2** |
+| GND | Ground | **Pi Pin 6** |
+| **AOUT** | Analog Input | **ADS1115 Channel A0** |
+
+---
+
+### Temperature Sensor (LM35 / Analog via ADS1115)
+
+| Sensor Wire | Goes To | Connection |
+|-------------|---------|------------|
+| VCC | 5V | **Pi Pin 4** |
+| GND | Ground | **Pi Pin 6** |
+| **AOUT** | Analog Input | **ADS1115 Channel A2** |
+
+---
+
 
 ### Hall-effect Module
 
@@ -180,6 +200,24 @@ Tap the sensor. You should see the readings change. Press `Ctrl + C` to stop.
 python3 test_gps.py
 ```
 > **GPS needs clear sky!** Take the Pi near a window or outside. First fix takes 1–5 minutes. Be patient. Press `Ctrl + C` to stop.
+
+### Test ADS1115 ADC (I2C 0x48)
+```bash
+python3 test_ads1115.py
+```
+Scans all 4 channels on the ADS1115. Press `Ctrl + C` to stop.
+
+### Test MQ-3 Gas Sensor (Analog via ADS1115 A0)
+```bash
+python3 test_mq3.py
+```
+Monitors voltage and PPM. Blow some alcohol vapor or lighter gas near the sensor to see the value increase. Press `Ctrl + C` to stop.
+
+### Test Temperature Sensor (LM35 via ADS1115 A2)
+```bash
+python3 test_temperature.py
+```
+Displays current ambient temperature in °C. Press `Ctrl + C` to stop.
 
 ### Test SMS (SIM800L)
 ```bash

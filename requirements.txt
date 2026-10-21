@@ -1,3 +1,6 @@
 Flask==3.0.3
-pyserial==3.5
-RPi.GPIO==0.7.1
+pyserial>=3.5
+RPi.GPIO>=0.7.1
+adafruit-circuitpython-ads1x15>=2.2.14
+adafruit-circuitpython-busdevice
+pynmea2>=1.19.0

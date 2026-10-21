@@ -2,16 +2,22 @@
 import serial
 import time
 
-# Hardware UART for Pi 4 is typically /dev/ttyS0 or /dev/serial0
-SERIAL_PORT = '/dev/serial0'
+# Primary UART for Pi 4 GPIO 14/15 is /dev/ttyAMA0 (with fallback to /dev/serial0)
+SERIAL_PORTS = ['/dev/ttyAMA0', '/dev/serial0', '/dev/ttyS0']
 BAUD_RATE = 9600
 
 def read_gps():
-    try:
-        ser = serial.Serial(SERIAL_PORT, BAUD_RATE, timeout=1)
-        print(f"Connected to GPS on {SERIAL_PORT}. Waiting for NMEA data...")
-    except Exception as e:
-        print(f"Hardware connect failed: {e}. Using MOCK mode.")
+    ser = None
+    for port in SERIAL_PORTS:
+        try:
+            ser = serial.Serial(port, BAUD_RATE, timeout=1)
+            print(f"Connected to GPS on {port}. Waiting for NMEA data...")
+            break
+        except Exception:
+            continue
+
+    if ser is None:
+        print("Hardware connect failed. Using MOCK mode.")
         class MockSerial:
             def readline(self):
                 time.sleep(1)
