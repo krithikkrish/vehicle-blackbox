@@ -16,6 +16,8 @@ import sys
 
 # Force GSM_ONLY mode before importing sensor_manager and app
 os.environ["BLACKBOX_MODE"] = "GSM_ONLY"
+os.environ["EMERGENCY_PHONE"] = "+919555890832"
+EMERGENCY_NUM = "+919555890832"
 
 import logging
 import sensor_manager
