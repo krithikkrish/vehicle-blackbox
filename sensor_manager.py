@@ -212,83 +212,48 @@ def gps_thread():
 def hall_thread():
     """
     Count pulses from Hall Effect sensor on GPIO 22 → km/h.
-    When running in bench/demo mode (0 physical pulses), generates realistic
-    dynamic driving speed telemetry (accelerating, cruising ~42-56 km/h,
-    and dropping to 0.0 km/h on crash impact).
+    Takes ONLY physical values from the Hall effect sensor:
+    - If wheel is stationary (0 pulses): speed is 0.0 km/h.
+    - When wheel rotates: calculates exact speed from pulses counted on GPIO 22.
     """
-    import random
     pulse_count = {"n": 0}
-    gpio_active = False
 
     try:
         import RPi.GPIO as GPIO
         HALL_PIN = 22
         PULSES_PER_REV = 1
-        WHEEL_CIRCUMFERENCE_M = 1.85
+        WHEEL_CIRCUMFERENCE_M = 1.85  # ~59cm diameter tyre
 
         def _callback(channel):
             pulse_count["n"] += 1
 
         GPIO.setmode(GPIO.BCM)
         GPIO.setup(HALL_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-        GPIO.add_event_detect(HALL_PIN, GPIO.FALLING, callback=_callback)
-        gpio_active = True
-        logger.info("Hall Effect thread active on GPIO %d", HALL_PIN)
+        GPIO.add_event_detect(HALL_PIN, GPIO.FALLING, callback=_callback, bouncetime=15)
+        logger.info("Hall Effect sensor active on GPIO %d (100%% physical sensor reading)", HALL_PIN)
     except Exception as exc:
-        logger.info("Hall GPIO hardware unavailable (%s). Dynamic driving simulation active.", exc)
-        gpio_active = False
+        logger.info("Hall GPIO hardware unavailable (%s). Speed = 0.0 km/h.", exc)
+        PULSES_PER_REV = 1
+        WHEEL_CIRCUMFERENCE_M = 1.85
 
-    # Dynamic driving simulation state
-    sim_speed = 42.0
-    target_speed = 48.0
-    last_target_change = time.time()
+    last_tick = time.time()
 
     while True:
+        time.sleep(1.0)
         now = time.time()
+        dt = max(0.1, now - last_tick)
+        last_tick = now
+
         pulses = pulse_count["n"]
         pulse_count["n"] = 0
 
-        # Check if crash is currently latched
-        s = get_state()
-        is_crash = s.get("crash_detected", False) or (now < _crash_latched_until)
-
-        if is_crash:
-            # Post-crash vehicle stopped
-            sim_speed = 0.0
-            update_state(hall_speed_kmh=0.0, gps_speed_kmh=0.0)
-            time.sleep(1.0)
-            continue
-
-        if gpio_active and pulses > 0:
-            # Physical wheel pulses detected!
-            speed_ms = (pulses / PULSES_PER_REV * WHEEL_CIRCUMFERENCE_M) / 1.0
-            real_speed = round(speed_ms * 3.6, 1)
-            update_state(hall_speed_kmh=real_speed)
-            sim_speed = real_speed
-        else:
-            # Dynamic driving simulation (bench test or stationary)
-            # Pick a new realistic target cruising speed every 6 seconds
-            if now - last_target_change > 6.0:
-                target_speed = random.uniform(40.0, 56.0)
-                last_target_change = now
-
-            # Smoothly transition toward target with natural road variations
-            diff = target_speed - sim_speed
-            sim_speed += diff * 0.25 + random.uniform(-0.7, 0.7)
-            sim_speed = max(35.0, min(65.0, sim_speed))
-            speed_kmh = round(sim_speed, 1)
-
-            # Update Wheel speed
+        if pulses > 0:
+            revs = pulses / PULSES_PER_REV
+            speed_ms = (revs * WHEEL_CIRCUMFERENCE_M) / dt
+            speed_kmh = round(speed_ms * 3.6, 1)
             update_state(hall_speed_kmh=speed_kmh)
-
-            # If GPS fix is not currently supplying real speed > 1.0 km/h,
-            # synchronize GPS speed with vehicle speed (with tiny realistic satellite Doppler noise)
-            gps_real_speed = s.get("gps_speed_kmh", 0.0)
-            if not s.get("gps_fix") or gps_real_speed == 0.0 or abs(gps_real_speed - speed_kmh) < 1.0:
-                gps_spd = max(0.0, round(speed_kmh + random.uniform(-0.4, 0.4), 1))
-                update_state(gps_speed_kmh=gps_spd)
-
-        time.sleep(1.0)
+        else:
+            update_state(hall_speed_kmh=0.0)
 
 
 # ── ADS1115 Analog Sensors Thread (MQ-3 on A0, Temp on A2) ──────────────────
@@ -343,8 +308,6 @@ def ads1115_thread():
                 # If LM35 is connected, voltage is typically between 0.15V (15°C) and 1.0V (100°C)
                 if v_temp >= 0.05:
                     celsius = round(v_temp * 100.0, 1)
-                    # Natural subtle ADC millivolt noise for live responsiveness
-                    celsius = round(celsius + random.uniform(-0.1, 0.1), 1)
                     v_mq3_clean = round(v_mq3, 3)
                     mq3_ppm = round((v_mq3_clean / 5.0) * 100.0, 2)
                     alert = detect_alcohol(v_mq3_clean)
