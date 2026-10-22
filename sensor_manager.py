@@ -217,54 +217,87 @@ def hall_thread():
     2. Converts RPM into Speed (km/h) = (revs * WHEEL_CIRCUMFERENCE_M / dt) * 3.6
     - If wheel is stationary (0 pulses): RPM = 0, Speed = 0.0 km/h.
     - When wheel rotates: captures real RPM and converts into km/h.
+    - Resilient: clears stale event detection and supports polling fallback.
     """
     pulse_count = {"n": 0}
+    PULSES_PER_REV = 1
+    WHEEL_CIRCUMFERENCE_M = 1.85  # ~59cm diameter tyre
+    HALL_PIN = 22
+    lock = threading.Lock()
+    last_cb_time = 0.0
+    hardware_ok = False
 
     try:
         import RPi.GPIO as GPIO
-        HALL_PIN = 22
-        PULSES_PER_REV = 1
-        WHEEL_CIRCUMFERENCE_M = 1.85  # ~59cm diameter tyre
+        GPIO.setmode(GPIO.BCM)
+
+        # Clear any lingering event detection from previous runs
+        try:
+            GPIO.remove_event_detect(HALL_PIN)
+        except Exception:
+            pass
+
+        GPIO.setup(HALL_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
         def _callback(channel):
-            pulse_count["n"] += 1
+            nonlocal last_cb_time
+            last_cb_time = time.time()
+            with lock:
+                pulse_count["n"] += 1
 
-        GPIO.setmode(GPIO.BCM)
-        GPIO.setup(HALL_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-        GPIO.add_event_detect(HALL_PIN, GPIO.FALLING, callback=_callback, bouncetime=15)
-        logger.info("Hall Effect sensor active on GPIO %d (Real RPM & Speed calculation)", HALL_PIN)
+        try:
+            GPIO.add_event_detect(HALL_PIN, GPIO.FALLING, callback=_callback, bouncetime=10)
+            logger.info("Hall Effect sensor active on GPIO %d (Interrupt active)", HALL_PIN)
+        except Exception as e:
+            logger.warning("Hall GPIO event detect warning (%s), falling back to polling", e)
+
+        hardware_ok = True
     except Exception as exc:
         logger.info("Hall GPIO hardware unavailable (%s). Speed = 0.0 km/h, RPM = 0.", exc)
-        PULSES_PER_REV = 1
-        WHEEL_CIRCUMFERENCE_M = 1.85
 
     last_tick = time.time()
+    last_pin_state = None
 
     while True:
-        time.sleep(1.0)
-        now = time.time()
-        dt = max(0.1, now - last_tick)
-        last_tick = now
-
-        pulses = pulse_count["n"]
-        pulse_count["n"] = 0
-
-        if pulses > 0:
-            revs = pulses / PULSES_PER_REV
-            rpm = round((revs / dt) * 60.0)
-            # Speed from RPM: Speed (km/h) = (RPM * Circumference * 60) / 1000
-            speed_ms = (revs * WHEEL_CIRCUMFERENCE_M) / dt
-            speed_kmh = round(speed_ms * 3.6, 1)
-
-            update_state(
-                hall_rpm       = int(rpm),
-                hall_speed_kmh = speed_kmh
-            )
+        if hardware_ok:
+            time.sleep(0.01)  # 100 Hz poll loop
+            now = time.time()
+            try:
+                curr_pin = GPIO.input(HALL_PIN)
+                # If pin transitioned 1 -> 0 and callback didn't fire, catch it here
+                if last_pin_state == 1 and curr_pin == 0:
+                    if (now - last_cb_time) > 0.015:
+                        with lock:
+                            pulse_count["n"] += 1
+                last_pin_state = curr_pin
+            except Exception:
+                pass
         else:
-            update_state(
-                hall_rpm       = 0,
-                hall_speed_kmh = 0.0
-            )
+            time.sleep(0.5)
+            now = time.time()
+
+        dt = now - last_tick
+        if dt >= 0.8:  # Refresh speed and RPM every ~0.8-1.0s
+            last_tick = now
+            with lock:
+                pulses = pulse_count["n"]
+                pulse_count["n"] = 0
+
+            if pulses > 0:
+                revs = pulses / PULSES_PER_REV
+                rpm = round((revs / dt) * 60.0)
+                speed_ms = (revs * WHEEL_CIRCUMFERENCE_M) / dt
+                speed_kmh = round(speed_ms * 3.6, 1)
+
+                update_state(
+                    hall_rpm       = int(rpm),
+                    hall_speed_kmh = speed_kmh
+                )
+            else:
+                update_state(
+                    hall_rpm       = 0,
+                    hall_speed_kmh = 0.0
+                )
 
 
 # ── ADS1115 Analog Sensors Thread (MQ-3 on A0, Temp on A2) ──────────────────
