@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 # ── Configuration ────────────────────────────────────────────────────────────
 GSM_PORTS      = ["/dev/ttyUSB0", "/dev/ttyUSB1", "/dev/ttyAMA0"]
 GSM_BAUDRATE   = 9600
-EMERGENCY_NUM  = "+91XXXXXXXXXX"       # ← Replace with real number
+EMERGENCY_NUM  = os.environ.get("EMERGENCY_PHONE", os.environ.get("EMERGENCY_NUM", "+91XXXXXXXXXX"))       # ← Replace with real number or export EMERGENCY_PHONE
 GSM_ENABLED    = True
 # ─────────────────────────────────────────────────────────────────────────────
 

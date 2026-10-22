@@ -20,7 +20,7 @@ from alerts import AlertSystem
 from crash_logic import CrashDetector
 
 # Configurations
-EMERGENCY_PHONE = "+91XXXXXXXXXX"  # Replace with real number
+EMERGENCY_PHONE = os.environ.get("EMERGENCY_PHONE", os.environ.get("EMERGENCY_NUM", "+91XXXXXXXXXX"))  # Replace with real number
 LOOP_DELAY_SEC = 0.1              # 10Hz sampling
 
 
