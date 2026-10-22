@@ -28,9 +28,9 @@ app = Flask(__name__)
 def startup():
     # Only start once (guarded by a flag on the app object)
     if not getattr(app, "_sensors_started", False):
+        app._sensors_started = True
         mode = os.environ.get("BLACKBOX_MODE", "GPS_ONLY")
         sensor_manager.start_all(mode=mode)
-        app._sensors_started = True
 
 
 # ─────────────────────────────────────────────────────────────────────────────

@@ -39,3 +39,7 @@ env/
 .env
 config.json
 secrets.py
+
+# Logs and runtime artifacts
+*.log
+crash_logs/

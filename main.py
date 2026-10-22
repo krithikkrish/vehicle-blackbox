@@ -45,6 +45,7 @@ if __name__ == "__main__":
 
     # Start sensor acquisition threads in GPS_ONLY mode
     sensor_manager.start_all(mode="GPS_ONLY")
+    app._sensors_started = True
     logger.info("Sensor threads launched in GPS_ONLY mode.")
 
     # Start Flask (blocking)

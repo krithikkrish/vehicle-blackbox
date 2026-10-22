@@ -45,6 +45,7 @@ if __name__ == "__main__":
 
     # Start sensor acquisition threads in FULL mode
     sensor_manager.start_all(mode="FULL")
+    app._sensors_started = True
     logger.info("Sensor threads launched in FULL mode.")
 
     # Start Flask (blocking)

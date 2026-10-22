@@ -136,9 +136,14 @@ async function fetchAndUpdate() {
     el('card-gps').className        = `card ${gpsFix ? 'ok' : ''}`;
 
     // ── GPS Speed ────────────────────────────────────────────────────────────
-    const gpsSpd = data.gps_speed_kmh ?? 0;
+    const gpsSpd = Number(data.gps_speed_kmh ?? 0);
     setCard('card-gps-speed', gpsSpd.toFixed(1), 'km/h',
             'status-ok', gpsFix ? 'GPS SPEED' : 'ACQUIRING');
+    const meterGps = el('meter-gps-speed');
+    if (meterGps) {
+      const pctGps = Math.min(100, Math.max(0, (gpsSpd / 100) * 100));
+      meterGps.style.width = `${pctGps.toFixed(1)}%`;
+    }
 
     // ── OpenStreetMap update ─────────────────────────────────────────────────
     if (data.gps_lat && data.gps_lon) {
@@ -157,10 +162,15 @@ async function fetchAndUpdate() {
     }
 
     // ── Wheel Speed (Hall Effect) ────────────────────────────────────────────
-    const hall = data.hall_speed_kmh ?? 0;
+    const hall = Number(data.hall_speed_kmh ?? 0);
     setCard('card-hall', hall.toFixed(1), 'km/h — Hall Effect (GPIO 22)',
             hall > 80 ? 'status-warn' : 'status-ok',
             hall > 80 ? 'OVERSPEED' : 'NORMAL');
+    const meterHall = el('meter-hall-speed');
+    if (meterHall) {
+      const pctHall = Math.min(100, Math.max(0, (hall / 100) * 100));
+      meterHall.style.width = `${pctHall.toFixed(1)}%`;
+    }
 
     // ── Alcohol Sensor (MQ-3 via ADS1115 A0) ──────────────────────────────────
     const alcV   = data.alcohol_voltage ?? 0;
@@ -176,10 +186,15 @@ async function fetchAndUpdate() {
             vib ? 'CRASH DETECTED' : 'STABLE');
 
     // ── Temperature (LM35 via ADS1115 A2) ────────────────────────────────────
-    const tempC = data.temperature_c ?? 25.0;
+    const tempC = Number(data.temperature_c ?? 26.4);
     setCard('card-temp', tempC.toFixed(1), '°C (ADS1115 A2)',
             tempC > 60 ? 'status-alert' : tempC > 45 ? 'status-warn' : 'status-ok',
-            tempC > 60 ? 'OVERHEAT' : 'NORMAL');
+            tempC > 60 ? 'OVERHEAT' : tempC > 45 ? 'HIGH TEMP' : 'NORMAL');
+    const meterTemp = el('meter-temp');
+    if (meterTemp) {
+      const pctTemp = Math.min(100, Math.max(0, (tempC / 80) * 100));
+      meterTemp.style.width = `${pctTemp.toFixed(1)}%`;
+    }
 
     // ── Timestamp ────────────────────────────────────────────────────────────
     if (data.timestamp) {

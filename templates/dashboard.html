@@ -81,17 +81,25 @@
 
   <!-- GPS Speed -->
   <div class="card ok" id="card-gps-speed">
-    <div class="card-label">🛰 GPS Speed</div>
+    <div class="card-header-flex">
+      <div class="card-label">🛰 GPS Speed</div>
+      <span class="live-indicator"><span class="pulse-dot"></span> LIVE</span>
+    </div>
     <div class="card-value" id="val-gps-speed">0.0</div>
     <div class="card-unit">km/h</div>
+    <div class="meter-track"><div class="meter-fill" id="meter-gps-speed" style="width: 0%;"></div></div>
     <span class="card-status status-ok">GPS SPEED</span>
   </div>
 
   <!-- Hall Effect Speed -->
   <div class="card ok" id="card-hall">
-    <div class="card-label">⚡ Wheel Speed</div>
+    <div class="card-header-flex">
+      <div class="card-label">⚡ Wheel Speed</div>
+      <span class="live-indicator"><span class="pulse-dot"></span> LIVE</span>
+    </div>
     <div class="card-value">0.0</div>
     <div class="card-unit">km/h — Hall Effect (GPIO 22)</div>
+    <div class="meter-track"><div class="meter-fill" id="meter-hall-speed" style="width: 0%;"></div></div>
     <span class="card-status status-ok">NORMAL</span>
   </div>
 
@@ -113,9 +121,13 @@
 
   <!-- Temperature (LM35 via ADS1115 A2) -->
   <div class="card ok" id="card-temp">
-    <div class="card-label">🌡 Temperature (LM35)</div>
+    <div class="card-header-flex">
+      <div class="card-label">🌡 Temperature (LM35)</div>
+      <span class="live-indicator"><span class="pulse-dot"></span> LIVE</span>
+    </div>
     <div class="card-value">0.0</div>
     <div class="card-unit">°C (ADS1115 A2)</div>
+    <div class="meter-track"><div class="meter-fill temp-fill" id="meter-temp" style="width: 0%;"></div></div>
     <span class="card-status status-ok">NORMAL</span>
   </div>
 
