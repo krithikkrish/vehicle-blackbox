@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 GSM_PORTS      = ["/dev/ttyUSB0", "/dev/ttyUSB1", "/dev/ttyAMA0"]
 GSM_BAUDRATE   = 9600
 EMERGENCY_NUM  = os.environ.get("EMERGENCY_PHONE", os.environ.get("EMERGENCY_NUM", "+919555890832"))       # Emergency contact
-GSM_ENABLED    = True
+GSM_ENABLED    = False
 # ─────────────────────────────────────────────────────────────────────────────
 
 

@@ -5,8 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Vehicle Black Box — Live Dashboard</title>
   <link rel="stylesheet" href="/static/css/style.css" />
-  <!-- Chart.js -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
 
@@ -14,7 +12,7 @@
 <nav class="navbar">
   <div class="brand">
     🚗 <span>VEHICLE BLACK BOX</span>
-    <span id="mode-badge" class="mode-badge gsm-only">MODE: GSM ONLY</span>
+    <span id="mode-badge" class="mode-badge gps-only">GPS ONLY</span>
   </div>
   <nav>
     <a href="/" class="active">Dashboard</a>
@@ -33,7 +31,7 @@
   </div>
   <div class="crash-grid">
     <div class="crash-item"><span class="crash-label">Trigger:</span> <span id="crash-trigger" class="crash-val">SW-420 Vibration Impact</span></div>
-    <div class="crash-item"><span class="crash-label">Emergency SMS:</span> <span id="crash-sms-status" class="crash-val">—</span></div>
+    <div class="crash-item"><span class="crash-label">Telemetry:</span> <span id="crash-gps-status" class="crash-val" style="color:var(--green)">GPS Location Logged</span></div>
     <div class="crash-item"><span class="crash-label">Impact Time:</span> <span id="crash-time" class="crash-val">—</span></div>
     <div class="crash-item"><span class="crash-label">Impact Speed:</span> <span id="crash-speed" class="crash-val">0.0 km/h</span></div>
     <div class="crash-item"><span class="crash-label">Coordinates:</span> <span id="crash-location" class="crash-val">—</span></div>
@@ -121,22 +119,11 @@
     <span class="card-status status-ok">NORMAL</span>
   </div>
 
-  <!-- Speed Chart -->
-  <div class="chart-card">
-    <div class="chart-title">📈 Speed Telemetry (km/h)</div>
-    <div class="chart-wrapper" style="position: relative; height: 160px; width: 100%;">
-      <canvas id="speed-chart"></canvas>
-    </div>
-  </div>
-
   <!-- Live Map -->
   <div class="map-card" id="map-card">
     <div class="map-header">
       🗺 Live GPS Map
       <a id="gps-link" href="#" target="_blank">Open in Google Maps ↗</a>
-    </div>
-    <div id="map-disabled-banner" class="map-disabled-overlay" style="display: none;">
-      🛰️ GPS Tracking is DISABLED in this Mode (GSM Only / Free UART)
     </div>
     <iframe
       id="map-iframe"

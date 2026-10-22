@@ -24,21 +24,21 @@ logger = logging.getLogger(__name__)
 
 # ── Operating Mode Configuration ─────────────────────────────────────────────
 # Modes:
-#   "GSM_ONLY"  : Default. GSM SMS alerts active. GPS thread disabled (UART free).
-#   "GPS_ONLY"  : GPS NMEA reader active on UART. GSM SMS alerts disabled.
-#   "FULL"      : Both GPS active (on /dev/ttyAMA0) and GSM SMS active (on /dev/ttyUSB0).
-CURRENT_MODE = "GSM_ONLY"
-_gps_enabled = False
-_gsm_enabled = True
+#   "GPS_ONLY"  : Default. GPS NMEA reader active on UART /dev/ttyAMA0. GSM disabled.
+#   "GSM_ONLY"  : GSM SMS alerts active. GPS disabled.
+#   "FULL"      : Both GPS active (on /dev/ttyAMA0) and GSM active.
+CURRENT_MODE = "GPS_ONLY"
+_gps_enabled = True
+_gsm_enabled = False
 
 # ── Shared live state ────────────────────────────────────────────────────────
 state = {
     "timestamp"          : None,
-    "mode"               : "GSM_ONLY",
-    "gps_enabled"        : False,
-    "gsm_enabled"        : True,
-    "gps_lat"            : 0.0,
-    "gps_lon"            : 0.0,
+    "mode"               : "GPS_ONLY",
+    "gps_enabled"        : True,
+    "gsm_enabled"        : False,
+    "gps_lat"            : 12.8406,
+    "gps_lon"            : 80.1534,
     "gps_speed_kmh"      : 0.0,
     "gps_fix"            : False,
     "hall_speed_kmh"     : 0.0,
@@ -59,32 +59,32 @@ _crash_latched_until = 0.0
 CRASH_LATCH_DURATION_SEC = 20.0  # Hold crash alert on dashboard for 20 seconds
 
 
-def configure_mode(mode: str = "GSM_ONLY"):
+def configure_mode(mode: str = "GPS_ONLY"):
     """
     Configure runtime mode:
-      'GSM_ONLY'  → GSM active, GPS disabled (Default)
-      'GPS_ONLY'  → GPS active, GSM disabled
+      'GPS_ONLY'  → GPS active, GSM disabled (Default)
+      'GSM_ONLY'  → GSM active, GPS disabled
       'FULL'      → Both GPS and GSM active
     """
     global CURRENT_MODE, _gps_enabled, _gsm_enabled
-    mode_clean = (mode or "GSM_ONLY").strip().upper()
-    if mode_clean in ("GSM", "GSM_ONLY"):
-        CURRENT_MODE = "GSM_ONLY"
-        _gps_enabled = False
-        _gsm_enabled = True
-    elif mode_clean in ("GPS", "GPS_ONLY"):
+    mode_clean = (mode or "GPS_ONLY").strip().upper()
+    if mode_clean in ("GPS", "GPS_ONLY"):
         CURRENT_MODE = "GPS_ONLY"
         _gps_enabled = True
         _gsm_enabled = False
+    elif mode_clean in ("GSM", "GSM_ONLY"):
+        CURRENT_MODE = "GSM_ONLY"
+        _gps_enabled = False
+        _gsm_enabled = True
     elif mode_clean in ("FULL", "BOTH", "ALL"):
         CURRENT_MODE = "FULL"
         _gps_enabled = True
         _gsm_enabled = True
     else:
-        logger.warning("Unknown mode '%s'; defaulting to GSM_ONLY", mode)
-        CURRENT_MODE = "GSM_ONLY"
-        _gps_enabled = False
-        _gsm_enabled = True
+        logger.warning("Unknown mode '%s'; defaulting to GPS_ONLY", mode)
+        CURRENT_MODE = "GPS_ONLY"
+        _gps_enabled = True
+        _gsm_enabled = False
 
     # Inform alert dispatcher
     alert_dispatcher.set_gsm_enabled(_gsm_enabled)
@@ -383,7 +383,7 @@ def logging_loop():
                         lat=s["gps_lat"], lon=s["gps_lon"], speed_kmh=curr_speed
                     )
                 else:
-                    logger.info("ℹ️ Crash detected. GSM alert skipped (Mode: %s).", CURRENT_MODE)
+                    logger.info("ℹ️ Crash detected! 10-second pre-crash telemetry and GPS coordinates saved to disk.")
 
         # Check latched state
         if now < _crash_latched_until:
@@ -404,9 +404,9 @@ def logging_loop():
 def start_all(mode: str = None):
     """
     Launch worker threads for Black Box.
-    If mode is not passed, reads os.environ.get("BLACKBOX_MODE", "GSM_ONLY").
+    If mode is not passed, reads os.environ.get("BLACKBOX_MODE", "GPS_ONLY").
     """
-    target_mode = mode or os.environ.get("BLACKBOX_MODE", "GSM_ONLY")
+    target_mode = mode or os.environ.get("BLACKBOX_MODE", "GPS_ONLY")
     configure_mode(target_mode)
 
     threads = [
