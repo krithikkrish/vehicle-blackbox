@@ -14,13 +14,13 @@ Dashboard:  http://blackbox.local:5000
 import os
 import sys
 
-# Force FULL mode before importing sensor_manager and app
+# Force FULL mode and phone number before importing modules
 os.environ["BLACKBOX_MODE"] = "FULL"
 os.environ["EMERGENCY_PHONE"] = "+919555890832"
-EMERGENCY_NUM = "+919555890832"
 
 import logging
 import sensor_manager
+from alert_dispatcher import EMERGENCY_NUM
 from app import app
 
 logging.basicConfig(
@@ -45,7 +45,6 @@ if __name__ == "__main__":
 
     # Start sensor acquisition threads in FULL mode
     sensor_manager.start_all(mode="FULL")
-    app._sensors_started = True
     logger.info("Sensor threads launched in FULL mode.")
 
     # Start Flask (blocking)

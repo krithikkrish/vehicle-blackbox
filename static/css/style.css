@@ -127,6 +127,29 @@ body {
 .status-alert   { background: #450a0a; color: var(--red);   }
 .status-nofix   { background: #1e1b4b; color: var(--accent);}
 
+/* ── RPM Badge ─────────────────────────────────────────── */
+.rpm-badge {
+  background: rgba(0, 212, 255, 0.12);
+  border: 1px solid rgba(0, 212, 255, 0.35);
+  color: var(--accent);
+  font-weight: 700;
+  font-size: 0.95rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: 8px;
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  letter-spacing: 0.05em;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  transition: all 0.25s ease-in-out;
+}
+.rpm-badge.spinning {
+  background: rgba(34, 197, 94, 0.16);
+  border-color: rgba(34, 197, 94, 0.5);
+  color: var(--green);
+  box-shadow: 0 0 12px rgba(34, 197, 94, 0.25);
+}
+
 /* ── Live Telemetry Indicators & Dynamic Meters ────────── */
 .card-header-flex {
   display: flex;

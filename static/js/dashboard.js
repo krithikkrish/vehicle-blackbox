@@ -161,11 +161,27 @@ async function fetchAndUpdate() {
       }
     }
 
-    // ── Wheel Speed (Hall Effect) ────────────────────────────────────────────
+    // ── Wheel Speed & RPM (Hall Effect) ──────────────────────────────────────
     const hall = Number(data.hall_speed_kmh ?? 0);
-    setCard('card-hall', hall.toFixed(1), 'km/h — Hall Effect (GPIO 22)',
-            hall > 80 ? 'status-warn' : 'status-ok',
-            hall > 80 ? 'OVERSPEED' : 'NORMAL');
+    const rpm  = Number(data.hall_rpm ?? 0);
+    const hallStatus = hall > 80 ? 'status-warn' : 'status-ok';
+    const hallText   = hall > 80 ? 'OVERSPEED' : (rpm > 0 ? `${rpm} RPM` : 'STOPPED');
+
+    setCard('card-hall', hall.toFixed(1), 'km/h (from Hall Effect RPM on GPIO 22)',
+            hallStatus, hallText);
+
+    const rpmEl = el('val-hall-rpm');
+    if (rpmEl) rpmEl.textContent = rpm;
+
+    const rpmBadge = el('val-hall-rpm-badge');
+    if (rpmBadge) {
+      if (rpm > 0) {
+        rpmBadge.classList.add('spinning');
+      } else {
+        rpmBadge.classList.remove('spinning');
+      }
+    }
+
     const meterHall = el('meter-hall-speed');
     if (meterHall) {
       const pctHall = Math.min(100, Math.max(0, (hall / 100) * 100));

@@ -41,6 +41,7 @@ state = {
     "gps_lon"            : 80.1534,
     "gps_speed_kmh"      : 0.0,
     "gps_fix"            : True,
+    "hall_rpm"           : 0,
     "hall_speed_kmh"     : 0.0,
     "alcohol_voltage"    : 0.350,
     "alcohol_ppm"        : 7.0,
@@ -208,13 +209,14 @@ def gps_thread():
             time.sleep(2)
 
 
-# ── Hall Effect Speed Thread (GPIO 22) ──────────────────────────────────────
+# ── Hall Effect Speed & RPM Thread (GPIO 22) ────────────────────────────────
 def hall_thread():
     """
-    Count pulses from Hall Effect sensor on GPIO 22 → km/h.
-    Takes ONLY physical values from the Hall effect sensor:
-    - If wheel is stationary (0 pulses): speed is 0.0 km/h.
-    - When wheel rotates: calculates exact speed from pulses counted on GPIO 22.
+    Count pulses from Hall Effect sensor on GPIO 22:
+    1. Calculates real Wheel RPM = (pulses / PULSES_PER_REV / dt) * 60
+    2. Converts RPM into Speed (km/h) = (revs * WHEEL_CIRCUMFERENCE_M / dt) * 3.6
+    - If wheel is stationary (0 pulses): RPM = 0, Speed = 0.0 km/h.
+    - When wheel rotates: captures real RPM and converts into km/h.
     """
     pulse_count = {"n": 0}
 
@@ -230,9 +232,9 @@ def hall_thread():
         GPIO.setmode(GPIO.BCM)
         GPIO.setup(HALL_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
         GPIO.add_event_detect(HALL_PIN, GPIO.FALLING, callback=_callback, bouncetime=15)
-        logger.info("Hall Effect sensor active on GPIO %d (100%% physical sensor reading)", HALL_PIN)
+        logger.info("Hall Effect sensor active on GPIO %d (Real RPM & Speed calculation)", HALL_PIN)
     except Exception as exc:
-        logger.info("Hall GPIO hardware unavailable (%s). Speed = 0.0 km/h.", exc)
+        logger.info("Hall GPIO hardware unavailable (%s). Speed = 0.0 km/h, RPM = 0.", exc)
         PULSES_PER_REV = 1
         WHEEL_CIRCUMFERENCE_M = 1.85
 
@@ -249,11 +251,20 @@ def hall_thread():
 
         if pulses > 0:
             revs = pulses / PULSES_PER_REV
+            rpm = round((revs / dt) * 60.0)
+            # Speed from RPM: Speed (km/h) = (RPM * Circumference * 60) / 1000
             speed_ms = (revs * WHEEL_CIRCUMFERENCE_M) / dt
             speed_kmh = round(speed_ms * 3.6, 1)
-            update_state(hall_speed_kmh=speed_kmh)
+
+            update_state(
+                hall_rpm       = int(rpm),
+                hall_speed_kmh = speed_kmh
+            )
         else:
-            update_state(hall_speed_kmh=0.0)
+            update_state(
+                hall_rpm       = 0,
+                hall_speed_kmh = 0.0
+            )
 
 
 # ── ADS1115 Analog Sensors Thread (MQ-3 on A0, Temp on A2) ──────────────────
@@ -413,6 +424,7 @@ def logging_loop():
                     history_10s.append({
                         "time": ts_short,
                         "speed": round(max(float(entry.get("gps_speed_kmh", 0) or 0), float(entry.get("hall_speed_kmh", 0) or 0)), 1),
+                        "rpm": int(entry.get("hall_rpm", 0) or 0),
                         "vibration": bool(entry.get("vibration")),
                         "temp": round(float(entry.get("temperature_c", 25.0) or 25.0), 1),
                         "alc_v": round(float(entry.get("alcohol_voltage", 0.0) or 0.0), 3)
@@ -426,6 +438,7 @@ def logging_loop():
                     "gsm_enabled": _gsm_enabled,
                     "trigger": "SW-420 Vibration Impact" if s["vibration"] else "Sudden Deceleration",
                     "speed_kmh": round(curr_speed, 1),
+                    "rpm": int(s.get("hall_rpm", 0) or 0),
                     "gps_lat": s["gps_lat"],
                     "gps_lon": s["gps_lon"],
                     "temperature_c": s["temperature_c"],
