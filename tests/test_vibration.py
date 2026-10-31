@@ -41,6 +41,8 @@ def main():
         GPIO.setup(VIBRATION_PIN, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 
     total_events = 0
+    consecutive_highs = 0
+    was_triggered = False
     display_latch_until = 0.0
 
     try:
@@ -52,20 +54,35 @@ def main():
                 raw_val = 0
 
             if raw_val == 1:
-                total_events += 1
+                consecutive_highs += 1
+            else:
+                consecutive_highs = 0
+
+            # Slightly less sensitive: require at least 2 consecutive 10ms samples
+            # to filter out minor ambient vibrations and single-tick glitches
+            is_impact = (consecutive_highs >= 2)
+
+            if is_impact:
+                if not was_triggered:
+                    total_events += 1
+                was_triggered = True
                 display_latch_until = now + 0.40  # Keep message visible for 400ms
+            elif consecutive_highs == 0:
+                was_triggered = False
 
             if now < display_latch_until:
-                status = "💥 IMPACT / VIBRATION DETECTED!"
+                status = "💥 IMPACT DETECTED!"
+            elif raw_val == 1:
+                status = "⚠️  MINOR VIB (Filtered out)"
             else:
                 status = "🟢 Resting / Stable"
 
             sys.stdout.write(
-                f"\r[{time.strftime('%H:%M:%S')}] Pin 18: {raw_val} | Status: {status:<35} | Total Events: {total_events:4d}"
+                f"\r[{time.strftime('%H:%M:%S')}] Pin 18: {raw_val} | Hits: {consecutive_highs}/2 | Status: {status:<30} | Total Events: {total_events:4d}"
             )
             sys.stdout.flush()
 
-            time.sleep(0.01)  # 100 Hz fast sampling
+            time.sleep(0.01)  # 100 Hz sampling
 
     except KeyboardInterrupt:
         print("\n\nExiting vibration test.")

@@ -456,17 +456,24 @@ def vibration_thread():
 
         logger.info("Vibration thread started on GPIO %d (calibrated debounce filter active)", VIB_PIN)
 
+        consecutive_highs = 0
         latch_until = 0.0
 
         while True:
             now = time.time()
             if GPIO.input(VIB_PIN) == GPIO.HIGH:
-                # Latch vibration for 300ms to guarantee logging_loop (10 Hz) captures the crash
+                consecutive_highs += 1
+            else:
+                consecutive_highs = 0
+
+            # Require at least 2 consecutive positive samples at 100 Hz (>= 15-20ms duration)
+            # to filter out minor ambient tremors, static, and slight desk bumps
+            if consecutive_highs >= 2:
                 latch_until = now + 0.30
 
             is_vibrating = (now < latch_until)
             update_state(vibration=is_vibrating)
-            time.sleep(0.01)  # 100 Hz responsive sampling
+            time.sleep(0.01)  # 100 Hz sampling
 
     except Exception as exc:
         logger.warning("Vibration sensor hardware unavailable: %s", exc)
