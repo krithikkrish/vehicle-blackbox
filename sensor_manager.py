@@ -350,7 +350,8 @@ def ads1115_thread():
                 v_mq3  = max(0.0, float(mq3_ch.voltage))
 
                 # If LM35 is connected, voltage is typically between 0.15V (15°C) and 1.0V (100°C)
-                if v_temp >= 0.05:
+                # Filter out floating pin noise (< 0.15V / < 15°C) to avoid bogus cold readings
+                if v_temp >= 0.15:
                     celsius = round(v_temp * 100.0, 1)
                     v_mq3_clean = round(v_mq3, 3)
                     mq3_ppm = round((v_mq3_clean / 5.0) * 100.0, 2)
@@ -396,6 +397,8 @@ def ads1115_thread():
 def vibration_thread():
     """
     Monitor SW-420 digital vibration sensor on GPIO 18 (Pin 12).
+    Calibrated with a debounce/sustained pulse filter to ignore minor road chatter,
+    light table bumps, and engine idling vibrations.
     """
     try:
         import RPi.GPIO as GPIO
@@ -404,11 +407,22 @@ def vibration_thread():
         GPIO.setmode(GPIO.BCM)
         GPIO.setup(VIB_PIN, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 
-        logger.info("Vibration thread started on GPIO %d", VIB_PIN)
+        logger.info("Vibration thread started on GPIO %d (calibrated debounce filter active)", VIB_PIN)
+
+        consecutive_hits = 0
+        REQUIRED_HITS = 3  # ~60ms of continuous vibration to qualify as genuine shock
+
         while True:
-            triggered = (GPIO.input(VIB_PIN) == GPIO.HIGH)
+            pin_high = (GPIO.input(VIB_PIN) == GPIO.HIGH)
+            if pin_high:
+                consecutive_hits += 1
+            else:
+                consecutive_hits = max(0, consecutive_hits - 1)
+
+            # Trigger only when sustained hits threshold
+            triggered = (consecutive_hits >= REQUIRED_HITS)
             update_state(vibration=triggered)
-            time.sleep(0.05)  # 20 Hz sampling
+            time.sleep(0.02)  # 50 Hz sampling
 
     except Exception as exc:
         logger.warning("Vibration sensor hardware unavailable: %s", exc)
