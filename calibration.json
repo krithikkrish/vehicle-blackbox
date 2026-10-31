@@ -2,5 +2,6 @@
   "sensor_type": "LM35",
   "offset_c": 3.0,
   "scale": 100.0,
-  "min_valid_voltage": 0.05
+  "min_valid_voltage": 0.05,
+  "vibration_threshold": 4
 }

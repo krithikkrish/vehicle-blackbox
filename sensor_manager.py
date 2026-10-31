@@ -456,19 +456,28 @@ def vibration_thread():
 
         logger.info("Vibration thread started on GPIO %d (calibrated debounce filter active)", VIB_PIN)
 
-        consecutive_highs = 0
+        samples = []
+        WINDOW_SIZE = 20  # 200ms window at 100 Hz
         latch_until = 0.0
+        last_cal_check = time.time()
+        cal = load_temperature_calibration()
+        threshold = int(cal.get("vibration_threshold", 4))
 
         while True:
             now = time.time()
-            if GPIO.input(VIB_PIN) == GPIO.HIGH:
-                consecutive_highs += 1
-            else:
-                consecutive_highs = 0
+            if now - last_cal_check > 3.0:
+                cal = load_temperature_calibration()
+                threshold = int(cal.get("vibration_threshold", 4))
+                last_cal_check = now
 
-            # Require at least 2 consecutive positive samples at 100 Hz (>= 15-20ms duration)
-            # to filter out minor ambient tremors, static, and slight desk bumps
-            if consecutive_highs >= 2:
+            pin_high = 1 if (GPIO.input(VIB_PIN) == GPIO.HIGH) else 0
+            samples.append(pin_high)
+            if len(samples) > WINDOW_SIZE:
+                samples.pop(0)
+
+            # Require at least threshold positive pulses in a 200ms window
+            # (default 4 hits = 40ms vibration energy), filtering out minor ambient tremors
+            if sum(samples) >= threshold:
                 latch_until = now + 0.30
 
             is_vibrating = (now < latch_until)

@@ -40,10 +40,23 @@ def main():
         GPIO.setmode(GPIO.BCM)
         GPIO.setup(VIBRATION_PIN, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 
+    import os, json
+    cal_file = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "calibration.json")
+    threshold = 4
+    if os.path.exists(cal_file):
+        try:
+            with open(cal_file, "r") as f:
+                threshold = int(json.load(f).get("vibration_threshold", 4))
+        except Exception:
+            pass
+
     total_events = 0
-    consecutive_highs = 0
+    samples = []
+    WINDOW_SIZE = 20  # 200ms window at 100 Hz
     was_triggered = False
     display_latch_until = 0.0
+
+    print(f"Calibrated Vibration Filter: {threshold} hits / 200ms window (Sampling @ 100 Hz)\n")
 
     try:
         while True:
@@ -53,32 +66,30 @@ def main():
             else:
                 raw_val = 0
 
-            if raw_val == 1:
-                consecutive_highs += 1
-            else:
-                consecutive_highs = 0
+            samples.append(raw_val)
+            if len(samples) > WINDOW_SIZE:
+                samples.pop(0)
 
-            # Slightly less sensitive: require at least 2 consecutive 10ms samples
-            # to filter out minor ambient vibrations and single-tick glitches
-            is_impact = (consecutive_highs >= 2)
+            active_hits = sum(samples)
+            is_impact = (active_hits >= threshold)
 
             if is_impact:
                 if not was_triggered:
                     total_events += 1
                 was_triggered = True
                 display_latch_until = now + 0.40  # Keep message visible for 400ms
-            elif consecutive_highs == 0:
+            elif active_hits == 0:
                 was_triggered = False
 
             if now < display_latch_until:
                 status = "💥 IMPACT DETECTED!"
-            elif raw_val == 1:
-                status = "⚠️  MINOR VIB (Filtered out)"
+            elif active_hits > 0:
+                status = f"⚠️  MINOR VIB ({active_hits}/{threshold} filtered)"
             else:
                 status = "🟢 Resting / Stable"
 
             sys.stdout.write(
-                f"\r[{time.strftime('%H:%M:%S')}] Pin 18: {raw_val} | Hits: {consecutive_highs}/2 | Status: {status:<30} | Total Events: {total_events:4d}"
+                f"\r[{time.strftime('%H:%M:%S')}] Pin 18: {raw_val} | Hits: {active_hits:2d}/{threshold} | Status: {status:<30} | Total Events: {total_events:4d}"
             )
             sys.stdout.flush()
 
