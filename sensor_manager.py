@@ -300,12 +300,51 @@ def hall_thread():
                 )
 
 
+CALIBRATION_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "calibration.json")
+
+
+def load_temperature_calibration():
+    defaults = {
+        "sensor_type": "LM35",
+        "offset_c": 0.0,
+        "scale": 100.0,
+        "min_valid_voltage": 0.05
+    }
+    if os.path.exists(CALIBRATION_FILE):
+        try:
+            with open(CALIBRATION_FILE, "r") as f:
+                defaults.update(json.load(f))
+        except Exception:
+            pass
+    return defaults
+
+
+def compute_calibrated_temperature(voltage: float, cal: dict) -> float:
+    import math
+    st = cal.get("sensor_type", "LM35").upper()
+    offset = float(cal.get("offset_c", 0.0))
+    scale = float(cal.get("scale", 100.0))
+
+    if st == "TMP36":
+        raw = (voltage - 0.5) * 100.0
+    elif st == "NTC10K":
+        vcc = 5.0
+        v_clamped = max(0.01, min(vcc - 0.01, voltage))
+        r_ntc = 10000.0 * (v_clamped / (vcc - v_clamped))
+        t_k = 1.0 / ((1.0 / 298.15) + (1.0 / 3950.0) * math.log(max(1.0, r_ntc / 10000.0)))
+        raw = t_k - 273.15
+    else:  # LM35 default
+        raw = voltage * scale
+
+    return round(raw + offset, 1)
+
+
 # ── ADS1115 Analog Sensors Thread (MQ-3 on A0, Temp on A2) ──────────────────
 def ads1115_thread():
     """
     Read analog sensors via ADS1115 (16-bit I2C on address 0x48):
       - Channel A0 (P0): MQ-3 Gas/Alcohol sensor
-      - Channel A2 (P2): Temperature sensor (LM35: 10mV/°C)
+      - Channel A2 (P2): Temperature sensor (calibrated via calibration.json)
     Provides continuous robust polling and realistic dynamic telemetry updates.
     """
     import random
@@ -322,7 +361,16 @@ def ads1115_thread():
 
     logger.info("ADS1115 sensor monitor thread started.")
 
+    cal = load_temperature_calibration()
+    last_cal_check = time.time()
+
     while True:
+        # Reload calibration config dynamically every 3 seconds
+        now = time.time()
+        if now - last_cal_check > 3.0:
+            cal = load_temperature_calibration()
+            last_cal_check = now
+
         # 1. Attempt I2C connection if not connected
         if not ads_connected:
             try:
@@ -349,10 +397,9 @@ def ads1115_thread():
                 v_temp = max(0.0, float(temp_ch.voltage))
                 v_mq3  = max(0.0, float(mq3_ch.voltage))
 
-                # If LM35 is connected, voltage is typically between 0.15V (15°C) and 1.0V (100°C)
-                # Filter out floating pin noise (< 0.15V / < 15°C) to avoid bogus cold readings
-                if v_temp >= 0.15:
-                    celsius = round(v_temp * 100.0, 1)
+                min_v = float(cal.get("min_valid_voltage", 0.05))
+                if v_temp >= min_v:
+                    celsius = compute_calibrated_temperature(v_temp, cal)
                     v_mq3_clean = round(v_mq3, 3)
                     mq3_ppm = round((v_mq3_clean / 5.0) * 100.0, 2)
                     alert = detect_alcohol(v_mq3_clean)

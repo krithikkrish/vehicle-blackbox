@@ -40,25 +40,52 @@ def main():
             print(f"ADS1115 connection failed: {e}. Falling back to MOCK mode.")
             temp_channel = None
 
+    # Load calibration settings
+    import os, json, math
+    cal_file = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "calibration.json")
+    cal = {"sensor_type": "LM35", "offset_c": 0.0, "scale": 100.0}
+    if os.path.exists(cal_file):
+        try:
+            with open(cal_file, "r") as f:
+                cal.update(json.load(f))
+        except Exception:
+            pass
+
+    st = cal.get("sensor_type", "LM35")
+    offset = float(cal.get("offset_c", 0.0))
+    scale = float(cal.get("scale", 100.0))
+    print(f"Active Calibration: Sensor={st} | Offset={offset:+.1f}°C | Scale={scale}\n")
+
     try:
         while True:
             if temp_channel is not None:
                 voltage = max(0.0, float(temp_channel.voltage))
                 raw_val = int(temp_channel.value)
-                celsius = voltage * 100.0  # LM35 conversion (10mV per deg C)
             else:
                 voltage = round(random.uniform(0.24, 0.28), 3)
                 raw_val = int((voltage / 4.096) * 32767)
-                celsius = round(voltage * 100.0, 2)
 
-            if voltage < 0.15:
-                diag = "[⚠️  LOW / FLOATING - Check 5V power (Pi Pin 4) & A2 wire]"
-            elif voltage <= 0.45:
+            if st == "TMP36":
+                raw_c = (voltage - 0.5) * 100.0
+            elif st == "NTC10K":
+                vcc = 5.0
+                v_clamped = max(0.01, min(vcc - 0.01, voltage))
+                r_ntc = 10000.0 * (v_clamped / (vcc - v_clamped))
+                t_k = 1.0 / ((1.0 / 298.15) + (1.0 / 3950.0) * math.log(max(1.0, r_ntc / 10000.0)))
+                raw_c = t_k - 273.15
+            else:  # LM35
+                raw_c = voltage * scale
+
+            celsius = round(raw_c + offset, 2)
+
+            if voltage < 0.10:
+                diag = "[⚠️  LOW / FLOATING]"
+            elif 0.15 <= voltage <= 0.45:
                 diag = "[🟢 OK - Ambient]"
             else:
-                diag = "[⚠️  HIGH - Warm sensor or check TMP36 formula]"
+                diag = "[ℹ️  INFO]"
 
-            print(f"[{time.strftime('%H:%M:%S')}] Temp Sensor -> Voltage: {voltage:.3f} V | Raw: {raw_val:5d} | Temp: {celsius:5.2f} °C {diag}")
+            print(f"[{time.strftime('%H:%M:%S')}] Temp Sensor -> Voltage: {voltage:.3f} V | Raw: {raw_val:5d} | Temp: {celsius:5.2f} °C ({st}) {diag}")
             time.sleep(1)
 
     except KeyboardInterrupt:
