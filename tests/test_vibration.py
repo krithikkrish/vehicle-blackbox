@@ -40,44 +40,32 @@ def main():
         GPIO.setmode(GPIO.BCM)
         GPIO.setup(VIBRATION_PIN, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 
-    consecutive_hits = 0
-    REQUIRED_HITS = 3
-    raw_events = 0
-    filtered_events = 0
-    was_triggered = False
+    total_events = 0
+    display_latch_until = 0.0
 
     try:
         while True:
+            now = time.time()
             if HARDWARE:
                 raw_val = GPIO.input(VIBRATION_PIN)
             else:
                 raw_val = 0
 
             if raw_val == 1:
-                consecutive_hits += 1
-                raw_events += 1
-            else:
-                consecutive_hits = max(0, consecutive_hits - 1)
+                total_events += 1
+                display_latch_until = now + 0.40  # Keep message visible for 400ms
 
-            is_impact = (consecutive_hits >= REQUIRED_HITS)
-            if is_impact and not was_triggered:
-                filtered_events += 1
-            was_triggered = is_impact
-
-            if is_impact:
-                status = "💥 IMPACT DETECTED (Sustained >= 60ms)"
-            elif raw_val == 1:
-                status = "⚠️  MINOR JOLT (Filtered out / too brief)"
+            if now < display_latch_until:
+                status = "💥 IMPACT / VIBRATION DETECTED!"
             else:
                 status = "🟢 Resting / Stable"
 
             sys.stdout.write(
-                f"\r[{time.strftime('%H:%M:%S')}] Pin 18: {raw_val} | Hits: {consecutive_hits:2d}/{REQUIRED_HITS} | "
-                f"Status: {status:<40} | Impacts: {filtered_events} (Raw Spikes: {raw_events})"
+                f"\r[{time.strftime('%H:%M:%S')}] Pin 18: {raw_val} | Status: {status:<35} | Total Events: {total_events:4d}"
             )
             sys.stdout.flush()
 
-            time.sleep(0.02)  # 50 Hz matching sensor_manager.py
+            time.sleep(0.01)  # 100 Hz fast sampling
 
     except KeyboardInterrupt:
         print("\n\nExiting vibration test.")

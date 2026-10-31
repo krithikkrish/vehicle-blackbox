@@ -409,20 +409,17 @@ def vibration_thread():
 
         logger.info("Vibration thread started on GPIO %d (calibrated debounce filter active)", VIB_PIN)
 
-        consecutive_hits = 0
-        REQUIRED_HITS = 3  # ~60ms of continuous vibration to qualify as genuine shock
+        latch_until = 0.0
 
         while True:
-            pin_high = (GPIO.input(VIB_PIN) == GPIO.HIGH)
-            if pin_high:
-                consecutive_hits += 1
-            else:
-                consecutive_hits = max(0, consecutive_hits - 1)
+            now = time.time()
+            if GPIO.input(VIB_PIN) == GPIO.HIGH:
+                # Latch vibration for 300ms to guarantee logging_loop (10 Hz) captures the crash
+                latch_until = now + 0.30
 
-            # Trigger only when sustained hits threshold
-            triggered = (consecutive_hits >= REQUIRED_HITS)
-            update_state(vibration=triggered)
-            time.sleep(0.02)  # 50 Hz sampling
+            is_vibrating = (now < latch_until)
+            update_state(vibration=is_vibrating)
+            time.sleep(0.01)  # 100 Hz responsive sampling
 
     except Exception as exc:
         logger.warning("Vibration sensor hardware unavailable: %s", exc)
