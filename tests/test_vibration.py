@@ -42,11 +42,11 @@ def main():
 
     import os, json
     cal_file = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "calibration.json")
-    threshold = 4
+    threshold = 6
     if os.path.exists(cal_file):
         try:
             with open(cal_file, "r") as f:
-                threshold = int(json.load(f).get("vibration_threshold", 4))
+                threshold = int(json.load(f).get("vibration_threshold", 6))
         except Exception:
             pass
 
