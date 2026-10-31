@@ -51,7 +51,14 @@ def main():
                 raw_val = int((voltage / 4.096) * 32767)
                 celsius = round(voltage * 100.0, 2)
 
-            print(f"[{time.strftime('%H:%M:%S')}] Temp Sensor -> Voltage: {voltage:.3f} V | Raw: {raw_val:5d} | Temp: {celsius:.2f} °C")
+            if voltage < 0.15:
+                diag = "[⚠️  LOW / FLOATING - Check 5V power (Pi Pin 4) & A2 wire]"
+            elif voltage <= 0.45:
+                diag = "[🟢 OK - Ambient]"
+            else:
+                diag = "[⚠️  HIGH - Warm sensor or check TMP36 formula]"
+
+            print(f"[{time.strftime('%H:%M:%S')}] Temp Sensor -> Voltage: {voltage:.3f} V | Raw: {raw_val:5d} | Temp: {celsius:5.2f} °C {diag}")
             time.sleep(1)
 
     except KeyboardInterrupt:

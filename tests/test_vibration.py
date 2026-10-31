@@ -38,31 +38,46 @@ def main():
 
     if HARDWARE:
         GPIO.setmode(GPIO.BCM)
-        # Try with no pull to see raw module output
-        GPIO.setup(VIBRATION_PIN, GPIO.IN, pull_up_down=GPIO.PUD_OFF)
+        GPIO.setup(VIBRATION_PIN, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 
-    last_val = None
-    change_count = 0
+    consecutive_hits = 0
+    REQUIRED_HITS = 3
+    raw_events = 0
+    filtered_events = 0
+    was_triggered = False
 
     try:
         while True:
             if HARDWARE:
                 raw_val = GPIO.input(VIBRATION_PIN)
             else:
-                raw_val = 1  # Mock fixed high to simulate user's condition
+                raw_val = 0
 
-            # Detect state flip
-            if last_val is not None and raw_val != last_val:
-                change_count += 1
-                status = "💥 STATE CHANGED (VIBRATION DETECTED!)"
+            if raw_val == 1:
+                consecutive_hits += 1
+                raw_events += 1
             else:
-                status = "Still / Resting"
+                consecutive_hits = max(0, consecutive_hits - 1)
 
-            sys.stdout.write(f"\r[{time.strftime('%H:%M:%S')}] Raw GPIO 18 = {raw_val} | Status: {status:<40} (Events: {change_count})")
+            is_impact = (consecutive_hits >= REQUIRED_HITS)
+            if is_impact and not was_triggered:
+                filtered_events += 1
+            was_triggered = is_impact
+
+            if is_impact:
+                status = "💥 IMPACT DETECTED (Sustained >= 60ms)"
+            elif raw_val == 1:
+                status = "⚠️  MINOR JOLT (Filtered out / too brief)"
+            else:
+                status = "🟢 Resting / Stable"
+
+            sys.stdout.write(
+                f"\r[{time.strftime('%H:%M:%S')}] Pin 18: {raw_val} | Hits: {consecutive_hits:2d}/{REQUIRED_HITS} | "
+                f"Status: {status:<40} | Impacts: {filtered_events} (Raw Spikes: {raw_events})"
+            )
             sys.stdout.flush()
 
-            last_val = raw_val
-            time.sleep(0.05)
+            time.sleep(0.02)  # 50 Hz matching sensor_manager.py
 
     except KeyboardInterrupt:
         print("\n\nExiting vibration test.")
