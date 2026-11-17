@@ -1,7 +1,7 @@
 # 🚗 Autonomous IoT Vehicle Black Box & Event Data Recorder (EDR)
 
 [![CI](https://github.com/krithikkrish/vehicle-blackbox/actions/workflows/ci.yml/badge.svg)](https://github.com/krithikkrish/vehicle-blackbox/actions/workflows/ci.yml)
-[![Python](https://img.shields.io/badge/Python-3.9%2B-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
+[![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
 [![Platform](https://img.shields.io/badge/Platform-Raspberry%20Pi%204B-C51A4A?style=flat-square&logo=raspberry-pi&logoColor=white)](https://www.raspberrypi.com/)
 [![Framework](https://img.shields.io/badge/Framework-Flask%203.0-000000?style=flat-square&logo=flask&logoColor=white)](https://palletsprojects.com/p/flask/)
 [![Architecture](https://img.shields.io/badge/Interface-I%C2%B2C%20%7C%20UART%20%7C%20GPIO-00599C?style=flat-square)](https://www.raspberrypi.com/documentation/)
