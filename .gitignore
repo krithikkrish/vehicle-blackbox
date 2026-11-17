@@ -1,10 +1,9 @@
-# Python
+# Python bytecode & cache
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
 .Python
-env/
 build/
 develop-eggs/
 dist/
@@ -29,17 +28,31 @@ venv/
 env/
 .env/
 
-# IDEs
+# IDEs & OS artifacts
 .idea/
 .vscode/
 *.swp
 *.swo
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
 
-# Configs / Secrets
+# Configs & Secrets
 .env
+.env.*
+!.env.example
 config.json
 secrets.py
 
-# Logs and runtime artifacts
+# Runtime sensor logs & crash dumps
 *.log
+*.csv
+continuous_log.csv
+crash_log.json
 crash_logs/
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+htmlcov/

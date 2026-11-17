@@ -12,7 +12,7 @@ import time
 
 SERIAL_PORTS = ['/dev/ttyUSB0', '/dev/ttyUSB1', '/dev/ttyAMA0']
 BAUD_RATE = 9600
-PHONE_NUMBER = os.environ.get("EMERGENCY_PHONE", os.environ.get("EMERGENCY_NUM", "+919555890832"))  # Emergency contact
+PHONE_NUMBER = os.environ.get("EMERGENCY_PHONE", os.environ.get("EMERGENCY_NUM", "+91XXXXXXXXXX"))  # Emergency contact
 
 
 def main():

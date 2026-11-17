@@ -166,21 +166,22 @@ pip3 install -r requirements.txt
 
 ## 📱 STEP 5: Set Your Emergency Phone Number
 
+Configure your emergency contact via `.env`:
+
 ```bash
-nano src/main.py
+cp .env.example .env
+nano .env
 ```
 
-Find this line near the top:
-```python
-EMERGENCY_PHONE = "+1234567890"
+Set `EMERGENCY_PHONE` to the **real phone number** you want the SOS SMS to go to (with country code, e.g., `+919876543210`):
+```bash
+EMERGENCY_PHONE=+919876543210
 ```
 
-Change `+1234567890` to the **real phone number** you want the SOS SMS to go to (with country code, like `+919876543210`).
-
-Save and exit:
-1. Press `Ctrl + X`
-2. Press `Y`
-3. Press `Enter`
+Alternatively, you can export it as an environment variable before running:
+```bash
+export EMERGENCY_PHONE="+919876543210"
+```
 
 ---
 

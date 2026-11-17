@@ -83,37 +83,52 @@ The system uses a **dual-storage strategy** to ensure data is never lost:
 
 ---
 
+## ⚙️ Environment Configuration
+
+Configure your environment settings using `.env`:
+```bash
+cp .env.example .env
+```
+Key configuration parameters:
+- `EMERGENCY_PHONE`: Destination mobile number for SOS alerts with international country code (e.g. `+919876543210`).
+- `BLACKBOX_MODE`: Default operational mode (`GPS_ONLY`, `GSM_ONLY`, or `FULL`).
+- `PORT`: Web Dashboard listening port (default: `5000`).
+
+---
+
 ## 🚀 Ready-to-Run Code Versions
 
-The repository provides **3 distinct, fully ready-to-run versions** tailored for modular lab testing and avoiding hardware UART serial contention:
+The repository provides **3 distinct operating modes** tailored for modular lab testing and avoiding hardware UART serial contention:
 
-### 1️⃣ Version 1: GSM Only (No GPS) — Default `main.py`
+### 1️⃣ Version 1: GSM Only (No GPS)
 Ideal when you do not have the GPS module connected or want UART pins 14/15 completely free.
 - **GSM Alerts**: **ACTIVE** (Dispatches emergency SOS SMS on crash/impact via SIM800L or simulation).
 - **GPS Receiver**: **DISABLED** (Serial thread omitted, no UART port lock).
 - **Run Web Dashboard**:
   ```bash
-  python3 main.py
+  python3 main.py --mode gsm
   ```
 - **Run CLI**:
   ```bash
-  python3 src/main.py
+  python3 src/main.py --mode gsm
   ```
 - **Web Dashboard**: `http://blackbox.local:5000`
 
 ---
 
-### 2️⃣ Version 2: GPS Only (No GSM) — `main_gps_only.py`
+### 2️⃣ Version 2: GPS Only (No GSM) — Default `main.py` / `main_gps_only.py`
 Ideal when you want satellite tracking, live OpenStreetMap visualization, and speed calculation without a SIM module.
 - **GPS Receiver**: **ACTIVE** (NEO-6M NMEA parser on `/dev/ttyAMA0` @ 9600 baud).
 - **GSM Alerts**: **DISABLED** (No SMS attempts, bypassing port conflicts).
 - **Run Web Dashboard**:
   ```bash
-  python3 main_gps_only.py
+  python3 main.py
+  # or: python3 main_gps_only.py
   ```
 - **Run CLI**:
   ```bash
-  python3 src/main_gps_only.py
+  python3 src/main.py
+  # or: python3 src/main_gps_only.py
   ```
 - **Web Dashboard**: `http://blackbox.local:5000`
 
@@ -126,10 +141,12 @@ Full production-ready blackbox deployment with all sensors and modules operating
 - **Run Web Dashboard**:
   ```bash
   python3 main_full.py
+  # or: python3 main.py --mode full
   ```
 - **Run CLI**:
   ```bash
   python3 src/main_full.py
+  # or: python3 src/main.py --mode full
   ```
 - **Web Dashboard**: `http://blackbox.local:5000`
 
