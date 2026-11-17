@@ -105,15 +105,35 @@ Google **"Raspberry Pi 4 GPIO pinout"** and keep that image open while wiring.
 
 ---
 
+### L298N Motor Driver (Bluetooth RC Car Chassis — Optional)
+
+If you are building the motorized RC vehicle chassis alongside the blackbox:
+
+| L298N Pin | Goes To | Pi Pin # / Power |
+|---|---|---|
+| **ENA** (Left PWM) | GPIO 12 (PWM0) | **Pin 32** *(Remove black jumper)* |
+| **IN1** (Left Forward) | GPIO 23 | **Pin 16** |
+| **IN2** (Left Reverse) | GPIO 24 | **Pin 18** |
+| **IN3** (Right Forward) | GPIO 27 | **Pin 13** *(Conflict-free with Hall Effect!)* |
+| **IN4** (Right Reverse) | GPIO 25 | **Pin 22** |
+| **ENB** (Right PWM) | GPIO 13 (PWM1) | **Pin 33** *(Remove black jumper)* |
+| **GND** | Ground & Battery (-) | **Pin 30** *(Common Ground is mandatory!)* |
+| **12V / VMS** | Battery Pack (+) | 7.4V – 12V Li-ion battery pack |
+
+> **⚠️ CRITICAL:** Always power the DC motors from an external battery pack (e.g. 2x 18650 Li-ion batteries). Never power the motors directly from the Raspberry Pi 5V header pin. Always tie the Battery (-) terminal and Raspberry Pi GND together.
+
+---
+
 ### ✅ Wiring Checklist (Go Through This Before Powering On)
 
 - [ ] No loose or dangling wires
 - [ ] VCC wires go to power pins (1, 2, or 4) — **NOT** to any GPIO pin
-- [ ] GND wires go to ground pins (6, 9, 14, 20, or 25)
-- [ ] Data wires go to correct GPIO pins (12, 16, 15, 10, 8, 11)
+- [ ] GND wires go to ground pins (6, 9, 14, 20, 25, or 30)
+- [ ] Data wires go to correct GPIO pins
 - [ ] LED has the 220Ω resistor (not connected directly)
 - [ ] GPS: TX → Pin 10, RX → Pin 8 (crossed)
 - [ ] SIM card is inside the SIM800L
+- [ ] If using L298N motors: Battery (-) is connected to Raspberry Pi GND (Common Ground)
 
 ---
 
@@ -226,10 +246,25 @@ python3 test_gsm_sms.py
 ```
 This will try to send a test SMS. Make sure the SIM has credit. Press `Ctrl + C` to stop.
 
+### Test Motors & Chassis (L298N)
+```bash
+python3 tests/test_motors.py
+```
+Performs a 7-step sequenced motor check (forward, reverse, turn left, turn right, and speed ramp). Elevate your car wheels before running this test.
+
 ---
 
 ## 🚀 STEP 7: Run the Full Black Box System
 
+### Option A: Full Live Web Dashboard (Recommended)
+```bash
+cd ~/vehicle-blackbox
+python3 main.py
+```
+Open your browser on phone or laptop:
+`http://<pi-ip-address>:5000` or `http://raspberrypi.local:5000`
+
+### Option B: Headless Black Box Logger
 ```bash
 cd ~/vehicle-blackbox
 python3 src/main.py
@@ -251,7 +286,59 @@ Starting Smart Vehicle Black Box...
 
 ---
 
-## 🔄 STEP 8: Getting Future Code Updates
+## 🏎️ STEP 8: Drive the Vehicle via Mobile Bluetooth (RC Car Mode)
+
+You can drive the car using your smartphone over Bluetooth while the Black Box logs telemetry.
+
+### 1. Enable Bluetooth Serial (One-Time Setup on Pi)
+Open a terminal on your Pi:
+```bash
+sudo bluetoothctl
+```
+Inside the `[bluetooth]#` console, enter:
+```text
+power on
+discoverable on
+pairable on
+agent on
+default-agent
+```
+On your mobile phone:
+- Open **Bluetooth Settings** $\to$ Scan for devices $\to$ Select your Raspberry Pi (`raspberrypi` or `blackbox`).
+- Confirm the numeric pairing passkey on both phone and Pi (`yes`).
+- Type `exit` in `bluetoothctl`.
+
+Next, enable the Serial Port Profile (SPP):
+```bash
+sudo sdptool add SP
+```
+
+### 2. Start the Bluetooth Car Controller
+```bash
+cd ~/vehicle-blackbox
+python3 scripts/bt_car.py
+```
+
+### 3. Connect via Smartphone App
+1. Install **"Arduino Bluetooth RC Car"** (by Andi.Co) or **"Serial Bluetooth Terminal"** from Google Play Store / App Store.
+2. Open the app $\to$ Settings/Connect icon $\to$ Select your paired **Raspberry Pi**.
+3. Use the directional buttons / steering wheel to drive:
+
+| Mobile Command | Function |
+|:---:|---|
+| **F** | Drive Forward |
+| **B** | Drive Backward |
+| **L** | Pivot Turn Left |
+| **R** | Pivot Turn Right |
+| **S** | Neutral / Stop |
+| **0 – 9** | Variable Speed Regulation (0% to 90%) |
+| **q** | Maximum Speed (100% duty cycle) |
+
+> **Pro Tip:** To test without a mobile phone, run `python3 scripts/bt_car.py --cli` for keyboard control (`W`, `A`, `S`, `D`, `Space`) or `python3 scripts/bt_car.py --test` for automated self-test!
+
+---
+
+## 🔄 STEP 9: Getting Future Code Updates
 
 When I push updates to GitHub, pull them like this:
 

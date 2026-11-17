@@ -105,6 +105,8 @@ This project delivers an open, production-ready IoT Black Box that records senso
   - Built with Flask, vanilla CSS, and JavaScript. Delivers real-time tachometer/speed meters, live Leaflet / OpenStreetMap GPS tracking, live alert badges, and a full historical crash log inspector.
 - **Hardware-Agnostic Mock & Simulation Support:**
   - Built-in simulation fallback allows full development, testing, and UI demonstration on any computer without requiring physical Raspberry Pi hardware.
+- **Mobile-Controlled Bluetooth Vehicle Chassis (Optional):**
+  - Integrated motor driver controller supporting standard smartphone RC apps (Android/iOS) over Bluetooth RFCOMM, enabling live driving of the instrumented vehicle while the blackbox logs telemetry.
 
 ---
 
@@ -120,6 +122,7 @@ This project delivers an open, production-ready IoT Black Box that records senso
 | **Status Alarm LED** | Visual Alert / Fault Indicator | Digital Output (220Ω series) | Pin 11 | GPIO 17 | 3.3V |
 | **NEO-6M GPS** | Satellite Positioning & Telematics | UART (`/dev/ttyAMA0`, 9600 baud) | Pin 8, 10 | GPIO 14, GPIO 15 | 5.0V (VCC) / 3.3V (Logic) |
 | **SIM800L GSM** | Emergency Cellular SMS Alerts | UART via USB-TTL (`/dev/ttyUSB0`)| USB Port | — | External 4.0V–4.2V (2A burst) |
+| **L298N Motor Driver** | Dual DC Motor Speed & Direction | GPIO & PWM (ENA/IN1/IN2/IN3/IN4/ENB) | Pin 13, 16, 18, 22, 32, 33 | GPIO 27, 23, 24, 25, 12, 13 | 7.4V–12V External Battery |
 
 > 📖 *For complete schematics, breadboard diagrams, and common grounding rules, refer to [**PIN_CONFIGURATION.md**](PIN_CONFIGURATION.md).*
 
@@ -148,7 +151,7 @@ vehicle-blackbox/
 ├── requirements.txt         # Production Python dependencies
 ├── sensor_manager.py        # Central multi-threaded sensor polling and state manager
 ├── scripts/
-│   └── bt_car.py            # Optional Bluetooth RC vehicle chassis motor controller
+│   └── bt_car.py            # Optional Bluetooth RC vehicle chassis motor controller (RFCOMM & CLI)
 ├── src/                     # Standalone Headless CLI Subsystem
 │   ├── alerts.py            # Headless alert dispatch module
 │   ├── buffer.py            # Headless circular buffer & CSV logger
@@ -170,6 +173,7 @@ vehicle-blackbox/
     ├── test_gps.py          # NEO-6M satellite fix & NMEA sentence stream test
     ├── test_gsm_sms.py      # SIM800L AT communication & SMS dispatch test
     ├── test_hall.py         # Hall effect pulse counting & RPM diagnostic
+    ├── test_motors.py       # L298N dual H-bridge motor driver diagnostic & speed ramp test
     ├── test_mq3.py          # MQ-3 analog voltage & alcohol threshold validation
     ├── test_temperature.py  # Temperature sensor reading & calibration test
     └── test_vibration.py    # SW-420 hit accumulator & vibration window tester
@@ -283,6 +287,26 @@ python3 src/main_full.py
 
 ---
 
+### 3. Mobile-Controlled Bluetooth RC Car Mode (`scripts/bt_car.py`)
+
+Turn the Raspberry Pi into a mobile-controlled robotic vehicle chassis that can be driven via smartphone while simultaneously logging flight data and telemetry.
+
+```bash
+# 1. Run standard Bluetooth RFCOMM server for mobile smartphone control
+python3 scripts/bt_car.py
+
+# 2. Run automated motor driver and steering self-test (bench verification)
+python3 scripts/bt_car.py --test
+
+# 3. Interactive keyboard control mode from terminal (W/A/S/D/Space)
+python3 scripts/bt_car.py --cli
+```
+
+- **Compatible Mobile Apps:** "Arduino Bluetooth RC Car" (by Andi.Co), "Bluetooth RC Controller", or "Serial Bluetooth Terminal".
+- **Commands:** `F` (Forward), `B` (Backward), `L` (Pivot Left), `R` (Pivot Right), `S` (Stop), `0`–`9` / `q` (Speed PWM Regulation).
+
+---
+
 ### Operational Modes Matrix
 
 | Mode Flag | GPS Tracking (NEO-6M) | GSM Alerts (SIM800L) | UART Requirements | Primary Use Case |
@@ -357,6 +381,9 @@ python3 tests/test_hall.py
 
 # 7. Test MQ-3 alcohol sensor analog sensitivity
 python3 tests/test_mq3.py
+
+# 8. Test L298N dual H-bridge motor driver, direction & PWM speed ramps
+python3 tests/test_motors.py
 ```
 
 ---

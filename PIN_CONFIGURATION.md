@@ -21,9 +21,16 @@
 | **Pin 10** | **GPIO 15 (UART RX)** | **GPS TX** (Yellow) / **SIM TX** | 3.3V Serial RX | Serial receive NMEA / AT data |
 | **Pin 11** | **GPIO 17** | **LED Anode (+)** *(via 220Ω resistor)* | 3.3V Output | Crash & Alcohol Alert Indicator |
 | **Pin 12** | **GPIO 18** | **SW-420 DO** (Yellow) | 3.3V Input | Digital Vibration detection (`HIGH` = Impact) |
+| **Pin 13** | **GPIO 27** | **L298N IN3** (Right Motor Forward) | 3.3V Output | Motor direction control |
 | **Pin 14** | **GND** | **ADS1115 GND** | 0V | ADC Ground return |
 | **Pin 15** | **GPIO 22** | **Hall-Effect Sensor DO** | 3.3V Input | Wheel rotation counter for speed (km/h) |
+| **Pin 16** | **GPIO 23** | **L298N IN1** (Left Motor Forward) | 3.3V Output | Motor direction control |
+| **Pin 18** | **GPIO 24** | **L298N IN2** (Left Motor Reverse) | 3.3V Output | Motor direction control |
+| **Pin 22** | **GPIO 25** | **L298N IN4** (Right Motor Reverse) | 3.3V Output | Motor direction control |
 | **Pin 25** | **GND** | **LED Cathode (-)** | 0V | LED Ground return |
+| **Pin 30** | **GND** | **L298N GND & Battery GND** | 0V | Common Ground return for motors |
+| **Pin 32** | **GPIO 12 (PWM0)** | **L298N ENA** (Left Motor PWM) | 3.3V PWM Output | Left motor speed control (0–100%) |
+| **Pin 33** | **GPIO 13 (PWM1)** | **L298N ENB** (Right Motor PWM) | 3.3V PWM Output | Right motor speed control (0–100%) |
 
 ---
 
@@ -123,6 +130,22 @@ Hall-Effect Sensor:
 - **Signal Type:** Pulse counter input on GPIO 22
 - **Speed Calculation:** Count pulses per second converted to km/h based on wheel circumference
 
+### 3.9 L298N Dual H-Bridge Motor Driver & Bluetooth Chassis (Optional)
+```
+L298N Motor Driver:
+├── ENA (PWM Speed Left)  → Raspberry Pi Pin 32 (GPIO 12 / PWM0) [Remove Jumper]
+├── IN1 (Left Forward)    → Raspberry Pi Pin 16 (GPIO 23)
+├── IN2 (Left Reverse)    → Raspberry Pi Pin 18 (GPIO 24)
+├── IN3 (Right Forward)   → Raspberry Pi Pin 13 (GPIO 27) [Conflict-free with GPIO 22!]
+├── IN4 (Right Reverse)   → Raspberry Pi Pin 22 (GPIO 25)
+├── ENB (PWM Speed Right) → Raspberry Pi Pin 33 (GPIO 13 / PWM1) [Remove Jumper]
+├── GND (Ground)          → Raspberry Pi Pin 30 (GND) AND External Battery Pack (-)
+└── 12V / VMS Power       → External Battery Pack (+) [7.4V – 12V Li-ion]
+```
+- **Control Protocol:** Bluetooth RFCOMM Serial socket via `scripts/bt_car.py`
+- **PWM Frequency:** 100 Hz software/hardware PWM for speed regulation
+- **Conflict-Free Guarantee:** Mapped specifically to allow full blackbox telemetry logging and active motor driving concurrently on the same Raspberry Pi 4B.
+
 ---
 
 ## 4. ⚡ Critical Electrical Safety Rules
@@ -139,6 +162,9 @@ Hall-Effect Sensor:
 >
 > **4. GPS Serial lines must be crossed:**  
 > GPS **TX** connects to Pi **RX** (Pin 10), and GPS **RX** connects to Pi **TX** (Pin 8).
+>
+> **5. Motor Driver Common Ground is Mandatory:**  
+> When using the L298N motor driver with an external battery pack, the battery's negative terminal (`-`) and Raspberry Pi GND **MUST be connected together**. Never power high-current DC motors directly from the Raspberry Pi 5V header.
 
 ---
 
@@ -154,17 +180,32 @@ All test scripts are located in the `tests/` directory:
 | **Vibration Sensor** | `python3 tests/test_vibration.py` | Verifies SW-420 impact detection on GPIO 18 |
 | **GPS Module** | `python3 tests/test_gps.py` | Verifies UART NMEA sentences on `/dev/ttyAMA0` |
 | **GSM Module** | `python3 tests/test_gsm_sms.py` | Sends a test emergency SMS via AT commands |
+| **Hall Effect Sensor** | `python3 tests/test_hall.py` | Validates wheel revolution pulses and speed on GPIO 22 |
+| **L298N Motor Driver** | `python3 tests/test_motors.py` | Verifies forward, reverse, steering spins, and PWM ramps |
 
 ---
 
 ## 6. 🚀 Running the System
 
-- **Core Blackbox Logger:**
-  ```bash
-  python3 src/main.py
-  ```
-- **Full Live Web Dashboard:**
+- **Full Live Web Dashboard (Recommended):**
   ```bash
   python3 main.py
   ```
   *Dashboard access:* `http://<pi-ip-address>:5000` or `http://raspberrypi.local:5000`
+
+- **Core Blackbox Logger (Headless CLI):**
+  ```bash
+  python3 src/main.py
+  ```
+
+- **Bluetooth RC Car Chassis Controller:**
+  ```bash
+  # Bluetooth RFCOMM server for mobile app control:
+  python3 scripts/bt_car.py
+
+  # Automated motor verification self-test:
+  python3 scripts/bt_car.py --test
+
+  # Interactive keyboard drive mode (W/A/S/D):
+  python3 scripts/bt_car.py --cli
+  ```
