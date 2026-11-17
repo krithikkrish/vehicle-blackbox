@@ -1,5 +1,6 @@
 # 🚗 Autonomous IoT Vehicle Black Box & Event Data Recorder (EDR)
 
+[![CI](https://github.com/krithikkrish/vehicle-blackbox/actions/workflows/ci.yml/badge.svg)](https://github.com/krithikkrish/vehicle-blackbox/actions/workflows/ci.yml)
 [![Python](https://img.shields.io/badge/Python-3.9%2B-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
 [![Platform](https://img.shields.io/badge/Platform-Raspberry%20Pi%204B-C51A4A?style=flat-square&logo=raspberry-pi&logoColor=white)](https://www.raspberrypi.com/)
 [![Framework](https://img.shields.io/badge/Framework-Flask%203.0-000000?style=flat-square&logo=flask&logoColor=white)](https://palletsprojects.com/p/flask/)
@@ -358,9 +359,12 @@ The web dashboard polls these internal endpoints, which can also be utilized for
 
 ## 🧪 Sensor Calibration & Diagnostics Suite
 
-The `tests/` directory provides standalone diagnostic scripts to independently verify hardware wiring and calibrate thresholds before full deployment:
+The `tests/` directory provides an automated unit test suite along with standalone diagnostic scripts to independently verify hardware wiring and calibrate thresholds before full deployment:
 
 ```bash
+# 0. Run automated unit test suite (verifies algorithms, circular buffer, and API)
+python3 -m unittest tests/test_unit.py -v
+
 # 1. Calibrate vibration sensor & verify hit accumulator against desk knocks
 python3 tests/test_vibration.py
 

@@ -436,56 +436,31 @@ def get_speed_kmh(interval_sec=1.0):
 
 ---
 
-## 12. Flask Web Dashboard *(In Progress)*
+## 12. Flask Web Telemetry Dashboard (Implemented & Validated)
 
-The Flask web dashboard is currently under development and constitutes the final deliverable of the project. The planned architecture is as follows:
+The Flask web telemetry dashboard has been fully implemented, integrated, and validated. Hosted directly on the Raspberry Pi 4B, the dashboard serves as the central graphical and telematics interface for real-time monitoring and post-incident investigation, accessible from any web browser on the local network (`http://blackbox.local:5000` or `http://<pi-ip>:5000`).
 
-### Planned Routes
+### Implemented Routes & REST Endpoints
 
-| Route | Description |
-|---|---|
-| `GET /` | Main dashboard — live sensor readings, status indicators |
-| `GET /api/live` | JSON API endpoint — returns latest sensor snapshot (polled by frontend JS) |
-| `GET /logs` | Lists all crash log files |
-| `GET /logs/<filename>` | Displays full crash dump with GPS link and timeline |
+| Route | Method | Description |
+|---|---|---|
+| `/` | `GET` | Main live telemetry dashboard with real-time gauges, live map, and alert banners |
+| `/logs` | `GET` | Historical incident archive listing all recorded crash dumps with metadata |
+| `/logs/<filename>` | `GET` | Frame-by-frame forensic analysis showing pre-crash and post-crash sensor timeline |
+| `/api/live` | `GET` | Real-time JSON telemetry snapshot polled at 1 Hz by frontend JavaScript |
+| `/api/history` | `GET` | Rolling 60-frame telemetry history array powering the live Chart.js speed canvas |
+| `/api/logs` | `GET` | JSON array of all saved crash logs with timestamps and file sizes |
+| `/api/logs/<filename>` | `GET` | Full JSON telemetry payload of a specific crash event |
+| `/api/reset_crash` | `POST` | Operator reset endpoint to clear latched crash alarms and resume normal monitoring |
 
-### Planned Dashboard UI
+### Dashboard Interface Architecture
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│  🚗  VEHICLE BLACK BOX — LIVE DASHBOARD                     │
-├──────────────┬──────────────┬──────────────┬────────────────┤
-│  GPS         │  Speed       │  Alcohol     │  Vibration     │
-│  12.8406°N   │  Hall: 52km/h│  MQ-3: 0.02V│  SW-420: OK    │
-│  80.1534°E   │  GPS:  52km/h│  Status: ✅  │  Status: ✅    │
-├──────────────┴──────────────┴──────────────┴────────────────┤
-│  System Status:  🟢 NORMAL                                  │
-│  Last Crash:     None                                       │
-│  Buffer Depth:   300 / 300 entries                          │
-└─────────────────────────────────────────────────────────────┘
-```
-
-### Flask Skeleton (Implemented)
-
-```python
-from flask import Flask, jsonify, render_template
-from circular_buffer import sensor_buffer
-
-app = Flask(__name__)
-
-@app.route('/')
-def dashboard():
-    return render_template('dashboard.html')
-
-@app.route('/api/live')
-def live_data():
-    if sensor_buffer:
-        return jsonify(sensor_buffer[-1])
-    return jsonify({"error": "No data yet"})
-
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=False)
-```
+The dashboard UI is engineered using responsive dark-mode CSS and vanilla JavaScript, eliminating heavy external dependencies:
+1. **Live Sensor Grid:** Dynamic cards displaying GPS coordinates (WGS-84), Hall Effect wheel speed (km/h), satellite ground speed (km/h), MQ-3 alcohol concentration (ppm & voltage), cabin temperature (°C), and SW-420 vibration status.
+2. **Dynamic Alert Banner:** Color-coded status banner indicating `NORMAL` (green), `ALCOHOL_ALERT` (amber), or `CRASH DETECTED` (pulsing red animation with emergency dispatch notice).
+3. **Interactive OpenStreetMap / Leaflet Integration:** Embedded live satellite map centered on current coordinates with auto-updating pin markers and a direct one-click link to Google Maps navigation.
+4. **Real-Time Speed Chart:** Live Chart.js canvas rendering a rolling 60-second telemetry trend comparing Hall Effect sensor speed against GPS ground speed.
+5. **Crash Log Forensic Explorer:** Dedicated log viewer displaying recorded crash files with full sensor state preceding the collision, enabling root-cause reconstruction.
 
 ---
 
@@ -547,7 +522,7 @@ This project successfully demonstrates the design and implementation of a cost-e
 
 On detection of a crash or driver impairment event, the system automatically dispatches an **SMS alert via the SIM800L GSM module** containing the vehicle's GPS coordinates, enabling rapid emergency response without any manual intervention. All sensor data is maintained in a rolling **circular buffer** on persistent storage, preserving the critical pre-crash and post-crash data window that is essential for post-accident forensic analysis.
 
-The Flask-based web dashboard, currently under development, will provide an intuitive live monitoring interface accessible from any networked device. The project demonstrates that a capable, real-world embedded data recorder can be built using open-source hardware and software at approximately **one-quarter the cost** of commercial EDR solutions, making it accessible and deployable across a wide range of vehicles — particularly in markets like India where such systems are not yet mandated or widely adopted.
+The integrated Flask web telemetry dashboard provides an intuitive, real-time monitoring and crash analysis interface accessible from any networked device. The project demonstrates that a capable, real-world embedded data recorder can be built using open-source hardware and software at approximately **one-quarter the cost** of commercial EDR solutions, making it accessible and deployable across a wide range of vehicles — particularly in markets like India where such systems are not yet mandated or widely adopted.
 
 The system is functional and validated on a breadboard prototype; a soldered PCB build and cloud connectivity are identified as the primary next-generation enhancements.
 
